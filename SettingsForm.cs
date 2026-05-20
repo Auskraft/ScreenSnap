@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace ScreenSnap
 {
@@ -12,6 +13,10 @@ namespace ScreenSnap
         private TextBox txtHotkeyRegion = new();
         private Label lblHotkeyFullPreview = new();
         private Label lblHotkeyRegionPreview = new();
+        private CheckBox chkAutostart = new();
+
+        private const string RegKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string AppName = "Auskraft Snap";
 
         public SettingsForm(AppSettings settings)
         {
@@ -22,8 +27,8 @@ namespace ScreenSnap
 
         private void BuildUI()
         {
-            Text = "ScreenSnap — Настройки";
-            Size = new Size(440, 360);
+            Text = "Auskraft Snap — Настройки";
+            Size = new Size(440, 400);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
@@ -74,7 +79,18 @@ namespace ScreenSnap
             txtHotkeyRegion = AddHotkeyBox(20, y);
             txtHotkeyRegion.KeyDown += (s, e) => CaptureHotkey(e, txtHotkeyRegion, lblHotkeyRegionPreview);
             lblHotkeyRegionPreview = AddLabel("", 220, y + 3);
-            y += 50;
+            y += 40;
+
+            // Автозапуск
+            chkAutostart = new CheckBox
+            {
+                Text = "Запускать при старте Windows",
+                Left = 20, Top = y,
+                AutoSize = true,
+                ForeColor = Color.White
+            };
+            Controls.Add(chkAutostart);
+            y += 40;
 
             // Кнопки
             var btnSave = AddButton("Сохранить", 20, y, 120);
@@ -111,6 +127,7 @@ namespace ScreenSnap
             cmbFormat.SelectedItem = settings.FileFormat;
             txtHotkeyFull.Text = settings.HotkeyFullScreen;
             txtHotkeyRegion.Text = settings.HotkeyRegion;
+            chkAutostart.Checked = IsAutostartEnabled();
         }
 
         private void OnSave(object? sender, EventArgs e)
@@ -123,8 +140,27 @@ namespace ScreenSnap
 
             ScreenCapture.SavePath = settings.SavePath;
 
+            SetAutostart(chkAutostart.Checked);
+
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        private bool IsAutostartEnabled()
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RegKey);
+            return key?.GetValue(AppName) != null;
+        }
+
+        private void SetAutostart(bool enable)
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RegKey, writable: true);
+            if (key == null) return;
+
+            if (enable)
+                key.SetValue(AppName, Application.ExecutablePath);
+            else
+                key.DeleteValue(AppName, throwOnMissingValue: false);
         }
 
         // Хелперы

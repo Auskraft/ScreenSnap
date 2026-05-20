@@ -5,7 +5,7 @@ namespace ScreenSnap
     public class AppSettings
     {
         public string SavePath { get; set; } = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "ScreenSnap");
+    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "AuskraftSnap");
         public string FileFormat { get; set; } = "PNG";
         public string HotkeyFullScreen { get; set; } = "Ctrl+Shift+F";
         public string HotkeyRegion { get; set; } = "Ctrl+Shift+A";

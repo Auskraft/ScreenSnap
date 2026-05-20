@@ -6,12 +6,12 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "ScreenSnap/1.0.0": {
+      "AuskraftSnap/1.0.0": {
         "dependencies": {
           "DotNetEnv": "3.2.0"
         },
         "runtime": {
-          "ScreenSnap.dll": {}
+          "AuskraftSnap.dll": {}
         }
       },
       "DotNetEnv/3.2.0": {
@@ -68,7 +68,7 @@
     }
   },
   "libraries": {
-    "ScreenSnap/1.0.0": {
+    "AuskraftSnap/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

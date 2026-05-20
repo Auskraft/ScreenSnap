@@ -12,6 +12,17 @@ namespace ScreenSnap
         private YandexDiskService yandex;
         private ToolStripMenuItem yandexMenuItem = new();
 
+        private static Icon LoadIcon()
+        {
+            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.png");
+            if (File.Exists(iconPath))
+            {
+                using var bmp = new Bitmap(iconPath);
+                return Icon.FromHandle(bmp.GetHicon());
+            }
+            return SystemIcons.Application;
+        }
+
         public TrayApplicationContext()
         {
             DotNetEnv.Env.Load();
@@ -30,8 +41,8 @@ namespace ScreenSnap
 
             trayIcon = new NotifyIcon()
             {
-                Icon = SystemIcons.Application,
-                Text = "ScreenSnap",
+                Icon = LoadIcon(),
+                Text = "Auskraft Snap",
                 Visible = true,
                 ContextMenuStrip = BuildMenu()
             };
@@ -74,7 +85,7 @@ namespace ScreenSnap
             var file = ScreenCapture.CaptureFullScreen();
             if (yandex.IsAuthorized)
                 await yandex.UploadAsync(file);
-            trayIcon.ShowBalloonTip(3000, "ScreenSnap", $"Сохранено:\n{file}", ToolTipIcon.Info);
+            trayIcon.ShowBalloonTip(3000, "Auskraft Snap", $"Сохранено:\n{file}", ToolTipIcon.Info);
         }
 
         private async void TakeRegion()
@@ -88,7 +99,7 @@ namespace ScreenSnap
             {
                 if (yandex.IsAuthorized)
                     await yandex.UploadAsync(file);
-                trayIcon.ShowBalloonTip(3000, "ScreenSnap", $"Сохранено:\n{file}", ToolTipIcon.Info);
+                trayIcon.ShowBalloonTip(3000, "Auskraft Snap", $"Сохранено:\n{file}", ToolTipIcon.Info);
             }
         }
 
@@ -101,20 +112,20 @@ namespace ScreenSnap
             if (yandex.IsAuthorized)
             {
                 UpdateYandexMenuItem();
-                trayIcon.ShowBalloonTip(3000, "ScreenSnap", "Яндекс.Диск подключён!", ToolTipIcon.Info);
+                trayIcon.ShowBalloonTip(3000, "Auskraft Snap", "Яндекс.Диск подключён!", ToolTipIcon.Info);
             }
         }
 
         private void OnYandexDisconnect(object? sender, EventArgs e)
         {
-            var result = MessageBox.Show("Отключить Яндекс.Диск?", "ScreenSnap", MessageBoxButtons.YesNo);
+            var result = MessageBox.Show("Отключить Яндекс.Диск?", "Auskraft Snap", MessageBoxButtons.YesNo);
             if (result == DialogResult.Yes)
             {
                 settings.YandexToken = "";
                 settings.Save();
                 yandex.SetToken("");
                 UpdateYandexMenuItem();
-                trayIcon.ShowBalloonTip(3000, "ScreenSnap", "Яндекс.Диск отключён.", ToolTipIcon.Info);
+                trayIcon.ShowBalloonTip(3000, "Auskraft Snap", "Яндекс.Диск отключён.", ToolTipIcon.Info);
             }
         }
 
