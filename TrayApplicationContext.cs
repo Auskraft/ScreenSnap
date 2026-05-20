@@ -74,7 +74,7 @@ namespace ScreenSnap
             var file = ScreenCapture.CaptureFullScreen();
             if (yandex.IsAuthorized)
                 await yandex.UploadAsync(file);
-            MessageBox.Show($"Сохранено:\n{file}", "ScreenSnap");
+            trayIcon.ShowBalloonTip(3000, "ScreenSnap", $"Сохранено:\n{file}", ToolTipIcon.Info);
         }
 
         private async void TakeRegion()
@@ -88,10 +88,8 @@ namespace ScreenSnap
             {
                 if (yandex.IsAuthorized)
                     await yandex.UploadAsync(file);
-                MessageBox.Show($"Сохранено:\n{file}", "ScreenSnap");
+                trayIcon.ShowBalloonTip(3000, "ScreenSnap", $"Сохранено:\n{file}", ToolTipIcon.Info);
             }
-            else
-                MessageBox.Show("Отменено.", "ScreenSnap");
         }
 
         private void OnFullScreenshot(object? sender, EventArgs e) => TakeFullScreen();
@@ -103,7 +101,7 @@ namespace ScreenSnap
             if (yandex.IsAuthorized)
             {
                 UpdateYandexMenuItem();
-                MessageBox.Show("Яндекс.Диск подключён!", "ScreenSnap");
+                trayIcon.ShowBalloonTip(3000, "ScreenSnap", "Яндекс.Диск подключён!", ToolTipIcon.Info);
             }
         }
 
@@ -116,6 +114,7 @@ namespace ScreenSnap
                 settings.Save();
                 yandex.SetToken("");
                 UpdateYandexMenuItem();
+                trayIcon.ShowBalloonTip(3000, "ScreenSnap", "Яндекс.Диск отключён.", ToolTipIcon.Info);
             }
         }
 
