@@ -9,13 +9,18 @@ namespace ScreenSnap
         private Rectangle selectedRegion;
         private bool isSelecting = false;
 
+        private Rectangle GetSelectedRegion() => selectedRegion;
+
         public static string? CaptureRegion()
         {
-            var bounds = Screen.PrimaryScreen!.Bounds;
             using var selector = new RegionSelector();
 
-            if (selector.ShowDialog() == DialogResult.OK && selector.selectedRegion.Width > 0)
-                return ScreenCapture.CaptureRegion(selector.selectedRegion);
+            if (selector.ShowDialog() == DialogResult.OK)
+            {
+                var region = selector.GetSelectedRegion();
+                if (region.Width > 0)
+                    return ScreenCapture.CaptureRegion(region);
+            }
 
             return null;
         }
