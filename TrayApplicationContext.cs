@@ -9,11 +9,19 @@ namespace ScreenSnap
         private NotifyIcon trayIcon;
         private AppSettings settings;
         private HotkeyManager hotkeyManager;
+        private YandexDiskService yandex;
+        private ToolStripMenuItem yandexMenuItem = new();
 
         public TrayApplicationContext()
         {
+            DotNetEnv.Env.Load();
+
             settings = AppSettings.Load();
             ScreenCapture.SavePath = settings.SavePath;
+
+            yandex = new YandexDiskService();
+            if (!string.IsNullOrEmpty(settings.YandexToken))
+                yandex.SetToken(settings.YandexToken);
 
             hotkeyManager = new HotkeyManager();
             hotkeyManager.FullScreenPressed += () => TakeFullScreen();
@@ -35,25 +43,53 @@ namespace ScreenSnap
             menu.Items.Add("📷 Скриншот полного экрана", null, OnFullScreenshot);
             menu.Items.Add("✂️ Выделить область", null, OnRegionScreenshot);
             menu.Items.Add(new ToolStripSeparator());
+
+            yandexMenuItem = new ToolStripMenuItem();
+            UpdateYandexMenuItem();
+            menu.Items.Add(yandexMenuItem);
+
             menu.Items.Add("⚙️ Настройки", null, OnSettings);
             menu.Items.Add("❌ Выход", null, OnExit);
             return menu;
         }
 
-        private void TakeFullScreen()
+        private void UpdateYandexMenuItem()
+        {
+            if (yandex.IsAuthorized)
+            {
+                yandexMenuItem.Text = "☁️ Яндекс.Диск подключён ✅";
+                yandexMenuItem.Click -= OnYandexConnect;
+                yandexMenuItem.Click += OnYandexDisconnect;
+            }
+            else
+            {
+                yandexMenuItem.Text = "☁️ Подключить Яндекс.Диск";
+                yandexMenuItem.Click -= OnYandexDisconnect;
+                yandexMenuItem.Click += OnYandexConnect;
+            }
+        }
+
+        private async void TakeFullScreen()
         {
             var file = ScreenCapture.CaptureFullScreen();
+            if (yandex.IsAuthorized)
+                await yandex.UploadAsync(file);
             MessageBox.Show($"Сохранено:\n{file}", "ScreenSnap");
         }
 
-        private void TakeRegion()
+        private async void TakeRegion()
         {
             trayIcon.Visible = false;
             Thread.Sleep(200);
             var file = RegionSelector.CaptureRegion();
             trayIcon.Visible = true;
+
             if (file != null)
+            {
+                if (yandex.IsAuthorized)
+                    await yandex.UploadAsync(file);
                 MessageBox.Show($"Сохранено:\n{file}", "ScreenSnap");
+            }
             else
                 MessageBox.Show("Отменено.", "ScreenSnap");
         }
@@ -61,11 +97,33 @@ namespace ScreenSnap
         private void OnFullScreenshot(object? sender, EventArgs e) => TakeFullScreen();
         private void OnRegionScreenshot(object? sender, EventArgs e) => TakeRegion();
 
+        private async void OnYandexConnect(object? sender, EventArgs e)
+        {
+            await yandex.AuthorizeAsync();
+            if (yandex.IsAuthorized)
+            {
+                UpdateYandexMenuItem();
+                MessageBox.Show("Яндекс.Диск подключён!", "ScreenSnap");
+            }
+        }
+
+        private void OnYandexDisconnect(object? sender, EventArgs e)
+        {
+            var result = MessageBox.Show("Отключить Яндекс.Диск?", "ScreenSnap", MessageBoxButtons.YesNo);
+            if (result == DialogResult.Yes)
+            {
+                settings.YandexToken = "";
+                settings.Save();
+                yandex.SetToken("");
+                UpdateYandexMenuItem();
+            }
+        }
+
         private void OnSettings(object? sender, EventArgs e)
         {
             using var form = new SettingsForm(settings);
             if (form.ShowDialog() == DialogResult.OK)
-                hotkeyManager.Register(settings); // переприменяем хоткеи после сохранения
+                hotkeyManager.Register(settings);
         }
 
         private void OnExit(object? sender, EventArgs e)

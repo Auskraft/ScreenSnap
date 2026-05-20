@@ -9,6 +9,7 @@ namespace ScreenSnap
         public string FileFormat { get; set; } = "PNG";
         public string HotkeyFullScreen { get; set; } = "Ctrl+Shift+F";
         public string HotkeyRegion { get; set; } = "Ctrl+Shift+A";
+        public string YandexToken { get; set; } = "";
 
         private static readonly string SettingsPath = Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory, "settings.json");

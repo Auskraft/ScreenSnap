@@ -13,3 +13,10 @@ C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.
 C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.genruntimeconfig.cache
 C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ref\ScreenSnap.dll
 C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.sourcelink.json
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\bin\Debug\net10.0-windows\DotNetEnv.dll
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\bin\Debug\net10.0-windows\Microsoft.Extensions.Configuration.dll
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\bin\Debug\net10.0-windows\Microsoft.Extensions.Configuration.Abstractions.dll
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\bin\Debug\net10.0-windows\Microsoft.Extensions.Primitives.dll
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\bin\Debug\net10.0-windows\Superpower.dll
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.csproj.AssemblyReference.cache
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.csproj.Up2Date
