@@ -6,7 +6,7 @@ namespace ScreenSnap
     public static class ScreenCapture
     {
         public static string SavePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), 
+            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
             "ScreenSnap");
 
         public static string CaptureFullScreen()
@@ -15,6 +15,18 @@ namespace ScreenSnap
             using var bitmap = new Bitmap(bounds.Width, bounds.Height);
             using var g = Graphics.FromImage(bitmap);
             g.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
+
+            Directory.CreateDirectory(SavePath);
+            var fileName = Path.Combine(SavePath, $"screenshot_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.png");
+            bitmap.Save(fileName);
+            return fileName;
+        }
+
+        public static string CaptureRegion(Rectangle region)
+        {
+            using var bitmap = new Bitmap(region.Width, region.Height);
+            using var g = Graphics.FromImage(bitmap);
+            g.CopyFromScreen(region.Location, Point.Empty, region.Size);
 
             Directory.CreateDirectory(SavePath);
             var fileName = Path.Combine(SavePath, $"screenshot_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.png");

@@ -1,5 +1,6 @@
-using System.Windows.Forms;
 using System.Drawing;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace ScreenSnap
 {
@@ -37,7 +38,17 @@ namespace ScreenSnap
 
         private void OnRegionScreenshot(object? sender, EventArgs e)
         {
-            MessageBox.Show("Выделение области — скоро сделаем!");
+            trayIcon.Visible = false;
+            Thread.Sleep(200);
+
+            var file = RegionSelector.CaptureRegion();
+
+            trayIcon.Visible = true;
+
+            if (file != null)
+                MessageBox.Show($"Сохранено:\n{file}", "ScreenSnap");
+            else
+                MessageBox.Show("Отменено.", "ScreenSnap");
         }
 
         private void OnSettings(object? sender, EventArgs e)
