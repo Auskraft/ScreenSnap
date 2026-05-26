@@ -94,7 +94,7 @@ namespace ScreenSnap
         {
             if (_mainWindow == null || _mainWindow.IsDisposed)
             {
-                _mainWindow = new MainWindow();
+                _mainWindow = new MainWindow(_settings);
                 _mainWindow.CommandPaletteRequested += (_, _) => OpenCommandPalette();
                 _mainWindow.FormClosed += (_, _) => _mainWindow = null;
                 _mainWindow.Show();
