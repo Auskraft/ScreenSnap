@@ -14,7 +14,7 @@ namespace ScreenSnap
                 Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
                 "AuskraftSnap");
 
-        /// Алиас для обратной совместимости со старым SettingsForm.cs и ScreenCapture.cs
+        /// Алиас для обратной совместимости
         [JsonIgnore]
         public string SavePath
         {
@@ -25,7 +25,7 @@ namespace ScreenSnap
         [JsonPropertyName("fileFormat")]
         public string FileFormat { get; set; } = "png";
 
-        // ── Тема (Фаза 1) ────────────────────────────────────────────────────
+        // ── Тема ─────────────────────────────────────────────────────────────
         [JsonPropertyName("theme")]
         public string Theme { get; set; } = "Dark";
 
@@ -62,6 +62,10 @@ namespace ScreenSnap
 
         [JsonPropertyName("copyToClipboard")]
         public bool CopyToClipboard { get; set; } = true;
+
+        // ── Онбординг ────────────────────────────────────────────────────────
+        [JsonPropertyName("onboardingShown")]
+        public bool OnboardingShown { get; set; } = false;
 
         // ── Load / Save ───────────────────────────────────────────────────────
         private static readonly string SettingsPath =

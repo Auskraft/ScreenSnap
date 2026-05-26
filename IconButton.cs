@@ -14,7 +14,7 @@ namespace ScreenSnap
             Text      = text;
             Size      = new Size(width, height);
             FlatStyle = FlatStyle.Flat;
-            FlatAppearance.BorderSize      = 0;
+            FlatAppearance.BorderSize          = 0;
             FlatAppearance.MouseOverBackColor  = Color.Transparent;
             FlatAppearance.MouseDownBackColor  = Color.Transparent;
             BackColor = Color.Transparent;
@@ -29,9 +29,16 @@ namespace ScreenSnap
             Invalidate();
         }
 
+        /// Обновить текст кнопки (используется в OnboardingForm)
+        public void SetLabel(string label)
+        {
+            Text = label;
+            Invalidate();
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
-            var g   = e.Graphics;
+            var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
             bool hover = ClientRectangle.Contains(PointToClient(Cursor.Position));

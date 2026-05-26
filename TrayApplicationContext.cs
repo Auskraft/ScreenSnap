@@ -19,7 +19,6 @@ namespace ScreenSnap
             _hotkeyManager    = new HotkeyManager();
             _workflowManager  = new WorkflowManager(_settings);
 
-            // Pin-событие от WorkflowManager → уведомляем HistoryScreen
             _workflowManager.PinRequested += OnPinRequested;
 
             // Tray icon
@@ -44,11 +43,9 @@ namespace ScreenSnap
             };
             _trayIcon.DoubleClick += (_, _) => OpenMainWindow();
 
-            // Hotkeys — базовые
+            // Hotkeys
             _hotkeyManager.FullScreenPressed     += CaptureFullScreen;
             _hotkeyManager.RegionPressed         += CaptureRegion;
-
-            // Hotkeys — пресеты Фазы 3
             _hotkeyManager.QuickSharePressed     += () => RunWorkflowAsync(WorkflowKind.QuickShare);
             _hotkeyManager.DocModePressed        += () => RunWorkflowAsync(WorkflowKind.DocMode);
             _hotkeyManager.PrivacyModePressed    += () => RunWorkflowAsync(WorkflowKind.PrivacyMode);
@@ -57,11 +54,14 @@ namespace ScreenSnap
 
             _hotkeyManager.Register(_settings);
 
-            // Тема из настроек
+            // Тема
             if (Enum.TryParse<AppThemeMode>(_settings.Theme, out var mode))
                 ThemeManager.SetMode(mode);
             if (Enum.TryParse<AccentPalette>(_settings.Accent, out var accent))
                 ThemeManager.SetAccent(accent);
+
+            // Онбординг при первом запуске
+            OnboardingForm.ShowIfNeeded(_settings);
         }
 
         // ── Context menu ──────────────────────────────────────────────────────
@@ -69,23 +69,24 @@ namespace ScreenSnap
         {
             var menu = new ContextMenuStrip();
 
-            AddItem(menu, "Открыть Auskraft Snap",          () => OpenMainWindow());
+            AddItem(menu, "Открыть Auskraft Snap",               () => OpenMainWindow());
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "📸 Скриншот области  Ctrl+Shift+A", () => CaptureRegion());
-            AddItem(menu, "⚡ Quick Share  Ctrl+Shift+S",       () => RunWorkflowAsync(WorkflowKind.QuickShare));
-            AddItem(menu, "✏️ Documentation Mode  Ctrl+Shift+D", () => RunWorkflowAsync(WorkflowKind.DocMode));
-            AddItem(menu, "🛡 Privacy Mode  Ctrl+Shift+P",       () => RunWorkflowAsync(WorkflowKind.PrivacyMode));
-            AddItem(menu, "📌 Save & Pin  Ctrl+Shift+T",         () => RunWorkflowAsync(WorkflowKind.SavePin));
+            AddItem(menu, "📸 Скриншот области  Ctrl+Shift+A",   () => CaptureRegion());
+            AddItem(menu, "⚡ Quick Share  Ctrl+Shift+S",         () => RunWorkflowAsync(WorkflowKind.QuickShare));
+            AddItem(menu, "✏️ Documentation Mode  Ctrl+Shift+D",  () => RunWorkflowAsync(WorkflowKind.DocMode));
+            AddItem(menu, "🛡 Privacy Mode  Ctrl+Shift+P",        () => RunWorkflowAsync(WorkflowKind.PrivacyMode));
+            AddItem(menu, "📌 Save & Pin  Ctrl+Shift+T",          () => RunWorkflowAsync(WorkflowKind.SavePin));
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "🌙 Переключить тему", () => ThemeManager.Toggle());
+            AddItem(menu, "🌙 Переключить тему",                  () => ThemeManager.Toggle());
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "⚙️ Настройки", () => new SettingsForm(_settings).ShowDialog());
+            AddItem(menu, "⚙️ Настройки",                        () => new SettingsForm(_settings).ShowDialog());
+            AddItem(menu, "🎓 Онбординг",                         () => OnboardingForm.ShowIfNeeded(_settings, force: true));
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "❌ Выход", () => ExitApplication());
+            AddItem(menu, "❌ Выход",                             () => ExitApplication());
 
             return menu;
         }
@@ -114,7 +115,7 @@ namespace ScreenSnap
             }
         }
 
-        // ── Capture (без workflow) ────────────────────────────────────────────
+        // ── Capture ───────────────────────────────────────────────────────────
         private void CaptureRegion()
         {
             _mainWindow?.Hide();
@@ -125,7 +126,6 @@ namespace ScreenSnap
                     Clipboard.SetImage(new Bitmap(path));
                 _trayIcon.ShowBalloonTip(2000, "Auskraft Snap",
                     $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
-
                 NotifyMainWindow(path, pinned: false);
             }
             _mainWindow?.Show();
@@ -138,7 +138,6 @@ namespace ScreenSnap
                 Clipboard.SetImage(new Bitmap(path));
             _trayIcon.ShowBalloonTip(2000, "Auskraft Snap",
                 $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
-
             NotifyMainWindow(path, pinned: false);
         }
 

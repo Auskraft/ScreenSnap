@@ -1,7 +1,16 @@
 {
-  "SavePath": "C:\\Users\\Auskraft_PC\\Pictures\\ScreenSnap",
-  "FileFormat": "PNG",
-  "HotkeyFullScreen": "Alt\u002BQ",
-  "HotkeyRegion": "Alt\u002BW",
-  "YandexToken": "y0__wgBELDQhOgDGOz9QSDupaLKF8DDVUzkjxyOrPNiRLzMyebzACiu"
+  "saveFolder": "C:\\Users\\Auskraft_PC\\Pictures\\AuskraftSnap",
+  "fileFormat": "png",
+  "theme": "Dark",
+  "accent": "Violet",
+  "language": "ru",
+  "hotkeyFullScreen": "Ctrl\u002BShift\u002BF",
+  "hotkeyRegion": "Ctrl\u002BShift\u002BA",
+  "hotkeyQuickShare": "Ctrl\u002BShift\u002BS",
+  "hotkeyCommandPalette": "Ctrl\u002BK",
+  "yandexToken": "",
+  "autoUpload": false,
+  "autoStart": false,
+  "copyToClipboard": true,
+  "onboardingShown": true
 }
