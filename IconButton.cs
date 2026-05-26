@@ -7,6 +7,7 @@ namespace ScreenSnap
     public sealed class IconButton : Button
     {
         private readonly bool _isClose;
+        private bool _isTextLabel = false; // true = текст типа "RU"/"EN", false = emoji/символ
 
         public IconButton(string text, int width, int height, bool isClose = false)
         {
@@ -20,20 +21,46 @@ namespace ScreenSnap
             BackColor = Color.Transparent;
             Cursor    = Cursors.Hand;
             TabStop   = false;
+
+            // Определяем: это emoji/символ или обычный текст
+            _isTextLabel = IsPlainText(text);
+            ApplyFont();
         }
 
         public void ApplyTheme(AppTheme t)
         {
             ForeColor = t.Text2;
-            Font      = t.FontBody(FontLoader.BodyXS);
+            // Шрифт пересчитываем с учётом типа кнопки
+            Font = _isTextLabel
+                ? t.FontBody(FontLoader.BodyXS, System.Drawing.FontStyle.Bold)
+                : new System.Drawing.Font("Segoe UI Emoji", 11f);
             Invalidate();
         }
 
-        /// Обновить текст кнопки (используется в OnboardingForm)
+        /// Обновить текст кнопки (используется для RU/EN переключателя)
         public void SetLabel(string label)
         {
             Text = label;
+            _isTextLabel = IsPlainText(label);
+            ApplyFont();
             Invalidate();
+        }
+
+        private void ApplyFont()
+        {
+            // Emoji используют Segoe UI Emoji — системный шрифт с полной поддержкой emoji
+            // Обычный текст (RU, EN, —, □) — Segoe UI
+            Font = _isTextLabel
+                ? new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold)
+                : new System.Drawing.Font("Segoe UI Emoji", 11f);
+        }
+
+        // Текст считается plain если все символы ASCII или кириллица (не emoji)
+        private static bool IsPlainText(string s)
+        {
+            foreach (char c in s)
+                if (c > 0x2FFF) return false; // emoji и спецсимволы выше U+2FFF
+            return true;
         }
 
         protected override void OnPaint(PaintEventArgs e)

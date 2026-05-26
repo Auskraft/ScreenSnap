@@ -206,12 +206,12 @@ namespace ScreenSnap
             }
             else
             {
-                fill      = Color.Transparent;
-                stroke    = Color.Transparent;
+                fill      = Color.FromArgb(0, 0, 0, 0); // полностью прозрачный через ARGB
+                stroke    = Color.FromArgb(0, 0, 0, 0);
                 textColor = t.Text3;
             }
 
-            if (fill != Color.Transparent)
+            if (fill.A > 0)
                 DrawingHelpers.DrawGlassCard(g, r, AppTheme.RSm, fill, stroke);
 
             TextRenderer.DrawText(g, label, f, r, textColor,
@@ -247,34 +247,53 @@ namespace ScreenSnap
             Invalidate(true);
         }
 
+        // ── FIX: разделены ветки для каждого типа контрола ────────────────────
         private static void StyleControl(Control c, AppTheme t)
         {
-            // CheckBox и RadioButton не поддерживают Color.Transparent напрямую
+            // CheckBox не поддерживает Color.Transparent — используем почти-прозрачный
             if (c is CheckBox chk)
             {
-                chk.BackColor = Color.FromArgb(1, 0, 0, 0); // почти прозрачный, но не Transparent
+                chk.BackColor = Color.FromArgb(1, 0, 0, 0);
                 chk.ForeColor = t.Text1;
                 return;
             }
 
-            c.BackColor = c is TextBox || c is ComboBox
-                ? Color.FromArgb(16, 255, 255, 255)
-                : Color.Transparent;
-            c.ForeColor = c is Button btn2 && btn2.Tag is "primary"
-                ? t.Accent.A2
-                : t.Text1;
+            // RadioButton — аналогично
+            if (c is RadioButton rb)
+            {
+                rb.BackColor = Color.FromArgb(1, 0, 0, 0);
+                rb.ForeColor = t.Text1;
+                return;
+            }
 
+            // TextBox
             if (c is TextBox tb)
             {
                 tb.BorderStyle = BorderStyle.FixedSingle;
                 tb.BackColor   = Color.FromArgb(20, 20, 28);
                 tb.ForeColor   = t.Text1;
+                return;
             }
+
+            // ComboBox не поддерживает Transparent
             if (c is ComboBox cb)
             {
                 cb.BackColor = Color.FromArgb(20, 20, 28);
                 cb.ForeColor = t.Text1;
+                return;
             }
+
+            // Button
+            if (c is Button btn)
+            {
+                btn.BackColor = Color.Transparent;
+                btn.ForeColor = btn.Tag is "primary" ? t.Accent.A2 : t.Text1;
+                return;
+            }
+
+            // Всё остальное (Label, Panel и т.д.) — Transparent безопасен
+            c.BackColor = Color.Transparent;
+            c.ForeColor = t.Text1;
         }
 
         // ── Builders ──────────────────────────────────────────────────────────
@@ -303,6 +322,8 @@ namespace ScreenSnap
             {
                 Bounds        = new Rectangle(pad, y, 120, 28),
                 DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor     = Color.FromArgb(20, 20, 28),
+                ForeColor     = Color.White,
             };
             _cmbFormat.Items.AddRange(new[] { "PNG", "JPG", "WEBP" });
             controls.Add(_cmbFormat);
@@ -331,25 +352,17 @@ namespace ScreenSnap
 
             controls.Add(SectionLabel("Горячие клавиши", pad, y)); y += 22;
 
-            // Список хоткеев (OCR удалён, Command Palette добавлен)
             var rows = new[]
             {
                 ("Полный экран",       "hotkeyFullScreen"),
                 ("Выделить область",   "hotkeyRegion"),
                 ("Quick Share",        "hotkeyQuickShare"),
                 ("Command Palette",    "hotkeyCommandPalette"),
-                // Phase 3+ только информационные:
                 ("Documentation Mode", ""),
                 ("Privacy Mode",       ""),
                 ("Save & Pin",         ""),
                 ("Active window",      ""),
                 ("Repeat last",        ""),
-            };
-
-            var phaseRows = new HashSet<string>
-            {
-                "Documentation Mode", "Privacy Mode",
-                "Save & Pin", "Active window", "Repeat last"
             };
 
             foreach (var (label, key) in rows)
@@ -360,14 +373,13 @@ namespace ScreenSnap
 
                 if (!string.IsNullOrEmpty(key))
                 {
-                    // Редактируемый хоткей
                     var box = new TextBox
                     {
-                        Bounds     = new Rectangle(pad + labelW + 12, y, boxW, 26),
-                        ReadOnly   = true,
-                        Tag        = key,
-                        BackColor  = Color.FromArgb(20, 20, 28),
-                        ForeColor  = Color.White,
+                        Bounds      = new Rectangle(pad + labelW + 12, y, boxW, 26),
+                        ReadOnly    = true,
+                        Tag         = key,
+                        BackColor   = Color.FromArgb(20, 20, 28),
+                        ForeColor   = Color.White,
                         BorderStyle = BorderStyle.FixedSingle,
                     };
                     box.KeyDown += (_, e) => CaptureHotkey(e, box);
@@ -376,7 +388,6 @@ namespace ScreenSnap
                 }
                 else
                 {
-                    // Фаза 3 — только метка
                     var ph = SectionLabel("Ctrl+Shift+? (Фаза 3)", pad + labelW + 12, y + 4);
                     ph.ForeColor = Color.FromArgb(80, 255, 255, 255);
                     controls.Add(ph);
@@ -399,7 +410,7 @@ namespace ScreenSnap
 
             controls.Add(SectionLabel("Тема", pad, y)); y += 22;
 
-            var btnDark  = AccentButton("🌙  Тёмная",  pad,      y, 110);
+            var btnDark  = AccentButton("🌙  Тёмная",  pad,       y, 110);
             var btnLight = AccentButton("☀  Светлая",  pad + 116, y, 110);
             btnDark.Click  += (_, _) => ThemeManager.SetMode(AppThemeMode.Dark);
             btnLight.Click += (_, _) => ThemeManager.SetMode(AppThemeMode.Light);
@@ -409,17 +420,14 @@ namespace ScreenSnap
 
             controls.Add(SectionLabel("Акцентный цвет", pad, y)); y += 22;
 
-            // Цветные кружки акцентов
             var accentDefs = new[]
             {
-                (AccentPalette.Violet,  Color.FromArgb(110, 75, 255), "Violet"),
-                (AccentPalette.Cyan,    Color.FromArgb(0, 200, 255),   "Cyan"),
-                (AccentPalette.Magenta, Color.FromArgb(220, 80, 255),  "Magenta"),
-                (AccentPalette.Lime,    Color.FromArgb(100, 230, 170), "Lime"),
+                (AccentPalette.Violet,  Color.FromArgb(110, 75, 255),  "Violet"),
+                (AccentPalette.Cyan,    Color.FromArgb(0, 200, 255),    "Cyan"),
+                (AccentPalette.Magenta, Color.FromArgb(220, 80, 255),   "Magenta"),
+                (AccentPalette.Lime,    Color.FromArgb(100, 230, 170),  "Lime"),
             };
 
-            // Рисуются в OnPaint через _accentRects, кликаются в OnMouseClick
-            // Сохраняем позиции
             _accentRects.Clear();
             int ax = pad;
             foreach (var (palette, color, name) in accentDefs)
@@ -428,7 +436,6 @@ namespace ScreenSnap
                 ax += 52;
             }
 
-            // Нарисовать кружки через Panel.Paint
             var accentPanel = new Panel
             {
                 Bounds    = new Rectangle(pad, y, 250, 50),
@@ -437,7 +444,7 @@ namespace ScreenSnap
             accentPanel.Paint += (_, pe) => DrawAccentPicker(pe.Graphics, accentDefs, pad, y);
             accentPanel.MouseClick += (_, me) =>
             {
-                int lx = me.X;
+                int lx  = me.X;
                 int idx = lx / 52;
                 if (idx >= 0 && idx < accentDefs.Length)
                     ThemeManager.SetAccent(accentDefs[idx].Item1);
@@ -503,8 +510,8 @@ namespace ScreenSnap
 
         private void BuildAboutTab()
         {
-            var controls  = new List<Control>();
-            int pad       = 24;
+            var controls = new List<Control>();
+            int pad      = 24;
 
             var lbl = new Label
             {
@@ -538,23 +545,23 @@ namespace ScreenSnap
         // ── Load / Save values ────────────────────────────────────────────────
         private void LoadValues()
         {
-            _txtSavePath.Text      = _settings.SaveFolder;
+            _txtSavePath.Text       = _settings.SaveFolder;
             _cmbFormat.SelectedItem = _settings.FileFormat.ToUpperInvariant();
             if (_cmbFormat.SelectedIndex < 0) _cmbFormat.SelectedIndex = 0;
-            _chkAutoStart.Checked  = IsAutostartEnabled();
-            _chkClipboard.Checked  = _settings.CopyToClipboard;
-            _txtYandexToken.Text   = _settings.YandexToken;
-            _chkAutoUpload.Checked = _settings.AutoUpload;
+            _chkAutoStart.Checked   = IsAutostartEnabled();
+            _chkClipboard.Checked   = _settings.CopyToClipboard;
+            _txtYandexToken.Text    = _settings.YandexToken;
+            _chkAutoUpload.Checked  = _settings.AutoUpload;
 
             foreach (var (_, key, box) in _hotkeys)
             {
                 box.Text = key switch
                 {
-                    "hotkeyFullScreen"      => _settings.HotkeyFullScreen,
-                    "hotkeyRegion"          => _settings.HotkeyRegion,
-                    "hotkeyQuickShare"      => _settings.HotkeyQuickShare,
-                    "hotkeyCommandPalette"  => _settings.HotkeyCommandPalette,
-                    _                       => "",
+                    "hotkeyFullScreen"     => _settings.HotkeyFullScreen,
+                    "hotkeyRegion"         => _settings.HotkeyRegion,
+                    "hotkeyQuickShare"     => _settings.HotkeyQuickShare,
+                    "hotkeyCommandPalette" => _settings.HotkeyCommandPalette,
+                    _                      => "",
                 };
             }
         }
@@ -603,8 +610,7 @@ namespace ScreenSnap
         private void DrawAccentPicker(Graphics g, (AccentPalette, Color, string)[] defs, int baseX, int baseY)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            var t    = ThemeManager.Current;
-            int ax   = 0;
+            int ax = 0;
             foreach (var (palette, color, _) in defs)
             {
                 bool active = ThemeManager.Accent == palette;
@@ -698,7 +704,7 @@ namespace ScreenSnap
             Text      = text,
             Location  = new Point(x, y),
             AutoSize  = true,
-            BackColor = Color.Transparent,
+            BackColor = Color.FromArgb(1, 0, 0, 0), // CheckBox не поддерживает Transparent
             ForeColor = Color.FromArgb(200, 245, 247, 255),
         };
 

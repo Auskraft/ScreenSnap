@@ -9,25 +9,13 @@ using System.Windows.Forms;
 
 namespace ScreenSnap
 {
-    // ═══════════════════════════════════════════════════════════════════════
-    //  EditorForm — редактор скриншотов (Фаза 4)
-    //
-    //  Инструменты: Select / Arrow / Rect / Ellipse / Line / Text /
-    //               Blur / Pixelate / Highlight / Step number
-    //  Панель слоёв справа, карточка Yandex Disk снизу справа.
-    //
-    //  Использование:
-    //    EditorForm.Open(imagePath, settings);
-    // ═══════════════════════════════════════════════════════════════════════
     public sealed class EditorForm : Form
     {
-        // ── Win32 ────────────────────────────────────────────────────────────
         [DllImport("user32.dll")]
         private static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
         [DllImport("user32.dll")]
         private static extern bool ReleaseCapture();
 
-        // ── Tools ─────────────────────────────────────────────────────────────
         public enum Tool
         {
             Select, Arrow, Rect, Ellipse, Line,
@@ -48,11 +36,10 @@ namespace ScreenSnap
             (Tool.StepNumber, "①",  "Step"),
         };
 
-        // ── Annotation model ──────────────────────────────────────────────────
         private abstract class Annotation
         {
-            public Color Color   { get; set; } = Color.FromArgb(110, 75, 255);
-            public float Width   { get; set; } = 2f;
+            public Color Color { get; set; } = Color.FromArgb(110, 75, 255);
+            public float Width { get; set; } = 2f;
             public abstract void Draw(Graphics g);
             public abstract bool HitTest(Point p);
         }
@@ -115,13 +102,11 @@ namespace ScreenSnap
                 => new Rectangle(Location.X, Location.Y, 120, 24).Contains(p);
         }
 
-        // FIX CS0414: убраны _cache и Invalidate() — Draw() их не использовал
         private class BlurAnnotation : Annotation
         {
             public Rectangle Bounds;
             public override void Draw(Graphics g)
             {
-                // Простая имитация blur через масштабирование
                 if (Bounds.Width < 2 || Bounds.Height < 2) return;
                 using var fill = new SolidBrush(Color.FromArgb(80, 0, 0, 0));
                 g.FillRectangle(fill, Bounds);
@@ -146,7 +131,7 @@ namespace ScreenSnap
                     for (int y = Bounds.Y; y < Bounds.Bottom; y += block)
                     {
                         var r = new Rectangle(x, y,
-                            Math.Min(block, Bounds.Right - x),
+                            Math.Min(block, Bounds.Right  - x),
                             Math.Min(block, Bounds.Bottom - y));
                         g.FillRectangle(fill, r);
                         using var pen = new Pen(Color.FromArgb(30, 255, 255, 255), 0.5f);
@@ -179,53 +164,46 @@ namespace ScreenSnap
                 g.FillEllipse(fill, r);
                 using var f = FontLoader.GetDisplay(12f, FontStyle.Bold);
                 using var b = new SolidBrush(System.Drawing.Color.White);
-                var s = Number.ToString();
+                var s  = Number.ToString();
                 var sz = TextRenderer.MeasureText(s, f);
                 g.DrawString(s, f, b,
-                    Center.X - sz.Width / 2f + 1,
+                    Center.X - sz.Width  / 2f + 1,
                     Center.Y - sz.Height / 2f + 1);
             }
             public override bool HitTest(Point p)
                 => new Rectangle(Center.X - 14, Center.Y - 14, 28, 28).Contains(p);
         }
 
-        // ── Layout ────────────────────────────────────────────────────────────
-        private const int WinW       = 1280;
-        private const int WinH       = 820;
-        private const int TitleH     = 44;
-        private const int ToolbarH   = 52;
-        private const int PanelW     = 240;
-        private const int StatusH    = 36;
-        private const int Radius     = AppTheme.RWindow;
-        private const int BtnSize    = 36;
+        private const int WinW     = 1280;
+        private const int WinH     = 820;
+        private const int TitleH   = 44;
+        private const int ToolbarH = 52;
+        private const int PanelW   = 240;
+        private const int StatusH  = 36;
+        private const int Radius   = AppTheme.RWindow;
+        private const int BtnSize  = 36;
 
-        // ── State ─────────────────────────────────────────────────────────────
-        private readonly AppSettings           _settings;
-        private readonly string                _imagePath;
-        private Bitmap?                        _source;
-        private Tool                           _tool       = Tool.Rect;
-        private Color                          _color      = Color.FromArgb(110, 75, 255);
-        private float                          _strokeW    = 2f;
-        private readonly List<Annotation>      _annotations = new();
-        private readonly Stack<List<Annotation>> _undo      = new();
-        private Annotation?                    _selected;
-        private Annotation?                    _drawing;
-        private Point                          _dragStart;
-        private bool                           _dragging;
-        private int                            _stepCounter = 1;
-        // FIX CS0649: _yandexLink теперь присваивается в OnRightPanelClick
-        private string?                        _yandexLink;
+        private readonly AppSettings             _settings;
+        private readonly string                  _imagePath;
+        private Bitmap?                          _source;
+        private Tool                             _tool       = Tool.Rect;
+        private Color                            _color      = Color.FromArgb(110, 75, 255);
+        private float                            _strokeW    = 2f;
+        private readonly List<Annotation>        _annotations = new();
+        private readonly Stack<List<Annotation>> _undo        = new();
+        private Annotation?                      _selected;
+        private Annotation?                      _drawing;
+        private Point                            _dragStart;
+        private bool                             _dragging;
+        private int                              _stepCounter = 1;
+        private string?                          _yandexLink;
 
-        // ── Panels ────────────────────────────────────────────────────────────
-        private readonly Panel  _toolbar;
-        private readonly Panel  _canvas;
-        private readonly Panel  _rightPanel;
-        private readonly Panel  _statusBar;
-
-        // ── Tool buttons ──────────────────────────────────────────────────────
+        private readonly Panel    _toolbar;
+        private readonly Panel    _canvas;
+        private readonly Panel    _rightPanel;
+        private readonly Panel    _statusBar;
         private readonly Button[] _toolBtns = new Button[ToolDefs.Length];
 
-        // ─────────────────────────────────────────────────────────────────────
         private EditorForm(string imagePath, AppSettings settings)
         {
             _imagePath = imagePath;
@@ -242,7 +220,6 @@ namespace ScreenSnap
                      ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.UserPaint, true);
 
-            // Загружаем изображение
             try { _source = new Bitmap(imagePath); }
             catch { _source = null; }
 
@@ -253,34 +230,28 @@ namespace ScreenSnap
                 Dock      = DockStyle.Top,
                 BackColor = Color.Transparent,
             };
-            titlebar.Paint      += DrawTitlebar;
-            titlebar.MouseDown  += OnTitlebarDrag;
+            titlebar.Paint     += DrawTitlebar;
+            titlebar.MouseDown += OnTitlebarDrag;
 
-            // Close button
             var btnClose = MakeWinBtn("✕", isClose: true);
-            btnClose.Click += (_, _) => Close();
-            btnClose.Location = new Point(WinW - 40, (TitleH - 28) / 2);
+            btnClose.Click    += (_, _) => Close();
+            btnClose.Location  = new Point(WinW - 40, (TitleH - 28) / 2);
             titlebar.Controls.Add(btnClose);
 
-            // Save button
             var btnSave = MakeWinBtn("💾 Сохранить", isClose: false, width: 100);
-            btnSave.Click += OnSave;
-            btnSave.Location = new Point(WinW - 155, (TitleH - 28) / 2);
+            btnSave.Click    += OnSave;
+            btnSave.Location  = new Point(WinW - 155, (TitleH - 28) / 2);
             titlebar.Controls.Add(btnSave);
 
-            // Copy button
             var btnCopy = MakeWinBtn("📋 Копировать", isClose: false, width: 110);
-            btnCopy.Click += OnCopy;
-            btnCopy.Location = new Point(WinW - 270, (TitleH - 28) / 2);
+            btnCopy.Click    += OnCopy;
+            btnCopy.Location  = new Point(WinW - 270, (TitleH - 28) / 2);
             titlebar.Controls.Add(btnCopy);
 
-            // Undo
             var btnUndo = MakeWinBtn("↩ Отменить", isClose: false, width: 100);
-            btnUndo.Click += OnUndo;
-            btnUndo.Location = new Point(WinW - 375, (TitleH - 28) / 2);
+            btnUndo.Click    += OnUndo;
+            btnUndo.Location  = new Point(WinW - 375, (TitleH - 28) / 2);
             titlebar.Controls.Add(btnUndo);
-
-            Controls.Add(titlebar);
 
             // ── Toolbar ───────────────────────────────────────────────────────
             _toolbar = new Panel
@@ -290,37 +261,33 @@ namespace ScreenSnap
                 BackColor = Color.Transparent,
             };
             _toolbar.Paint += DrawToolbar;
-            BuildToolButtons();
-            Controls.Add(_toolbar);
 
             // ── Body ──────────────────────────────────────────────────────────
             var body = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
 
-            // Right panel
             _rightPanel = new Panel
             {
                 Width     = PanelW,
                 Dock      = DockStyle.Right,
                 BackColor = Color.Transparent,
             };
-            _rightPanel.Paint       += DrawRightPanel;
-            _rightPanel.MouseClick  += OnRightPanelClick; // FIX CS0649: подключаем кнопку загрузки
+            _rightPanel.Paint      += DrawRightPanel;
+            _rightPanel.MouseClick += OnRightPanelClick;
 
-            // Canvas
+            // ── Canvas — создаём ДО BuildToolButtons ──────────────────────────
             _canvas = new Panel
             {
                 Dock      = DockStyle.Fill,
                 BackColor = Color.Transparent,
                 Cursor    = Cursors.Cross,
             };
-            _canvas.Paint      += DrawCanvas;
-            _canvas.MouseDown  += OnCanvasMouseDown;
-            _canvas.MouseMove  += OnCanvasMouseMove;
-            _canvas.MouseUp    += OnCanvasMouseUp;
+            _canvas.Paint     += DrawCanvas;
+            _canvas.MouseDown += OnCanvasMouseDown;
+            _canvas.MouseMove += OnCanvasMouseMove;
+            _canvas.MouseUp   += OnCanvasMouseUp;
 
             body.Controls.Add(_canvas);
             body.Controls.Add(_rightPanel);
-            Controls.Add(body);
 
             // ── Status bar ────────────────────────────────────────────────────
             _statusBar = new Panel
@@ -330,13 +297,20 @@ namespace ScreenSnap
                 BackColor = Color.Transparent,
             };
             _statusBar.Paint += DrawStatusBar;
-            Controls.Add(_statusBar);
+
+            // ── ВАЖНО: порядок добавления — Fill до Top ───────────────────────
+            Controls.Add(body);       // Fill — первым
+            Controls.Add(_toolbar);   // Top
+            Controls.Add(titlebar);   // Top (поверх toolbar)
+            Controls.Add(_statusBar); // Bottom
+
+            // BuildToolButtons вызываем ПОСЛЕ того как _canvas уже создан
+            BuildToolButtons();
 
             ThemeManager.ThemeChanged += (_, _) => Invalidate(true);
             ApplyRoundedRegion();
         }
 
-        // ── Public ────────────────────────────────────────────────────────────
         public static void Open(string imagePath, AppSettings settings)
         {
             var form = new EditorForm(imagePath, settings);
@@ -350,7 +324,6 @@ namespace ScreenSnap
             for (int i = 0; i < ToolDefs.Length; i++)
             {
                 var (tool, icon, label) = ToolDefs[i];
-                int idx = i;
                 var btn = new Button
                 {
                     Size      = new Size(BtnSize, BtnSize),
@@ -372,7 +345,6 @@ namespace ScreenSnap
                 _toolBtns[i] = btn;
                 x += BtnSize + 4;
 
-                // Разделитель после Line
                 if (tool == Tool.Line)
                 {
                     x += 8;
@@ -387,7 +359,6 @@ namespace ScreenSnap
                 }
             }
 
-            // Цветовые swatches
             x += 12;
             Color[] swatches =
             {
@@ -400,7 +371,7 @@ namespace ScreenSnap
             };
             foreach (var col in swatches)
             {
-                var c = col;
+                var c  = col;
                 var sw = new Panel
                 {
                     Size      = new Size(18, 18),
@@ -409,18 +380,19 @@ namespace ScreenSnap
                     Cursor    = Cursors.Hand,
                 };
                 using var path = DrawingHelpers.RoundedRect(new RectangleF(0, 0, 18, 18), 4f);
-                sw.Region = new Region(path);
-                sw.Click += (_, _) => { _color = c; _toolbar.Invalidate(); };
+                sw.Region  = new Region(path);
+                sw.Click  += (_, _) => { _color = c; _toolbar.Invalidate(); };
                 _toolbar.Controls.Add(sw);
                 x += 24;
             }
 
+            // _canvas уже существует — безопасно
             SelectTool(_tool);
         }
 
         private void SelectTool(Tool t)
         {
-            _tool   = t;
+            _tool          = t;
             _canvas.Cursor = t == Tool.Text ? Cursors.IBeam : Cursors.Cross;
             RefreshToolButtons();
             _toolbar.Invalidate();
@@ -445,18 +417,14 @@ namespace ScreenSnap
             var t = ThemeManager.Current;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Фон
             DrawingHelpers.DrawGlassCard(g,
-                new RectangleF(0, 0, WinW, TitleH),
-                0, t.BgGlassStrong, t.Stroke1);
+                new RectangleF(0, 0, WinW, TitleH), 0, t.BgGlassStrong, t.Stroke1);
 
-            // Линия снизу
             using var pen = new Pen(t.Stroke1, 1f);
             g.DrawLine(pen, 0, TitleH - 1, WinW, TitleH - 1);
 
-            // Заголовок
-            using var f = t.FontDisplay(FontLoader.BodyM, FontStyle.Bold);
-            var name = Path.GetFileName(_imagePath);
+            using var f    = t.FontDisplay(FontLoader.BodyM, FontStyle.Bold);
+            var name       = Path.GetFileName(_imagePath);
             TextRenderer.DrawText(g, $"✏️  {name}", f,
                 new Rectangle(16, 0, 500, TitleH), t.Text1,
                 TextFormatFlags.VerticalCenter);
@@ -470,16 +438,14 @@ namespace ScreenSnap
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
             DrawingHelpers.DrawGlassCard(g,
-                new RectangleF(0, 0, _toolbar.Width, ToolbarH),
-                0, t.BgGlass, t.Stroke1);
+                new RectangleF(0, 0, _toolbar.Width, ToolbarH), 0, t.BgGlass, t.Stroke1);
 
-            // Подсветка активного инструмента
             for (int i = 0; i < _toolBtns.Length; i++)
             {
                 if ((Tool)_toolBtns[i].Tag! == _tool)
                 {
                     var r = new RectangleF(
-                        _toolBtns[i].Left - 2, _toolBtns[i].Top - 2,
+                        _toolBtns[i].Left  - 2, _toolBtns[i].Top - 2,
                         _toolBtns[i].Width + 4, _toolBtns[i].Height + 4);
                     DrawingHelpers.DrawGlassCard(g, r, AppTheme.RXs,
                         Color.FromArgb(30, t.Accent.A2.R, t.Accent.A2.G, t.Accent.A2.B),
@@ -488,7 +454,6 @@ namespace ScreenSnap
                 }
             }
 
-            // Текущий цвет
             using var colorBrush = new SolidBrush(_color);
             using var colorPath  = DrawingHelpers.RoundedRect(
                 new RectangleF(_toolbar.Width - PanelW - 52, (ToolbarH - 22) / 2, 22, 22), 4f);
@@ -503,13 +468,9 @@ namespace ScreenSnap
             var g = e.Graphics;
             g.SmoothingMode     = SmoothingMode.AntiAlias;
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            var t               = ThemeManager.Current;
 
-            var t = ThemeManager.Current;
-
-            // Фон канваса
             g.Clear(t.Bg1);
-
-            // Шахматная сетка (прозрачность)
             DrawCheckerboard(g, _canvas.Width, _canvas.Height);
 
             if (_source == null)
@@ -521,13 +482,10 @@ namespace ScreenSnap
                 return;
             }
 
-            // Вписываем изображение в канвас с паддингом
             var imgRect = FitImage(_source.Width, _source.Height,
                 _canvas.Width, _canvas.Height, padding: 24);
-
             g.DrawImage(_source, imgRect);
 
-            // Аннотации
             var scale = new PointF(
                 (float)imgRect.Width  / _source.Width,
                 (float)imgRect.Height / _source.Height);
@@ -535,28 +493,10 @@ namespace ScreenSnap
             var state = g.Save();
             g.TranslateTransform(imgRect.X, imgRect.Y);
             g.ScaleTransform(scale.X, scale.Y);
-
-            foreach (var ann in _annotations)
-            {
-                if (ann == _selected)
-                {
-                    var oldG = g.SmoothingMode;
-                    g.SmoothingMode = SmoothingMode.AntiAlias;
-                    ann.Draw(g);
-                    g.SmoothingMode = oldG;
-                }
-                else
-                {
-                    ann.Draw(g);
-                }
-            }
-
-            // Текущий рисуемый элемент
+            foreach (var ann in _annotations) ann.Draw(g);
             _drawing?.Draw(g);
-
             g.Restore(state);
 
-            // Рамка вокруг канваса
             using var framePen = new Pen(t.Stroke2, 1f);
             g.DrawRectangle(framePen, imgRect.X - 1, imgRect.Y - 1,
                 imgRect.Width + 1, imgRect.Height + 1);
@@ -569,20 +509,16 @@ namespace ScreenSnap
             g.SmoothingMode = SmoothingMode.AntiAlias;
             var t = ThemeManager.Current;
 
-            // Фон
             DrawingHelpers.DrawGlassCard(g,
                 new RectangleF(0, 0, PanelW, _rightPanel.Height),
                 0, t.BgGlass, t.Stroke1);
 
             int y = 16;
-
-            // ── Заголовок «Layers» ────────────────────────────────────────────
             using var headFont = t.FontDisplay(FontLoader.BodyS, FontStyle.Bold);
             TextRenderer.DrawText(g, "Layers", headFont,
                 new Rectangle(16, y, PanelW - 32, 22), t.Text2);
             y += 30;
 
-            // ── Список аннотаций ──────────────────────────────────────────────
             if (_annotations.Count == 0)
             {
                 using var emptyFont = t.FontBody(FontLoader.BodyXS);
@@ -604,7 +540,6 @@ namespace ScreenSnap
                         sel ? Color.FromArgb(60, t.Accent.A2.R, t.Accent.A2.G, t.Accent.A2.B)
                             : t.Stroke1);
 
-                    // Цветной квадратик
                     using var cb = new SolidBrush(ann.Color);
                     g.FillRectangle(cb, 16, y + 8, 10, 10);
 
@@ -618,13 +553,11 @@ namespace ScreenSnap
                 }
             }
 
-            // ── Разделитель ───────────────────────────────────────────────────
             y = _rightPanel.Height - 160;
             using var divPen = new Pen(t.Stroke1, 1f);
             g.DrawLine(divPen, 12, y, PanelW - 12, y);
             y += 12;
 
-            // ── Yandex Disk карточка ──────────────────────────────────────────
             DrawYandexCard(g, t, y);
         }
 
@@ -637,21 +570,20 @@ namespace ScreenSnap
 
             int ty = (int)cardR.Y + 12;
             using var titleF = t.FontDisplay(FontLoader.BodyS, FontStyle.Bold);
-            TextRenderer.DrawText(g, "☁  Yandex Disk", titleF,
+            TextRenderer.DrawText(g, "Yandex Disk", titleF,
                 new Rectangle(16, ty, PanelW - 32, 20), t.Yandex);
             ty += 24;
 
             if (_yandexLink != null)
             {
-                using var linkF = t.FontMono(9f);
-                var short_link = _yandexLink.Length > 28
-                    ? _yandexLink[..25] + "…"
-                    : _yandexLink;
+                using var linkF     = t.FontMono(9f);
+                var short_link      = _yandexLink.Length > 28
+                    ? _yandexLink[..25] + "…" : _yandexLink;
                 TextRenderer.DrawText(g, short_link, linkF,
                     new Rectangle(16, ty, PanelW - 32, 16), t.Success);
                 ty += 20;
                 using var hintF = t.FontBody(FontLoader.BodyXS);
-                TextRenderer.DrawText(g, "✓ Загружено", hintF,
+                TextRenderer.DrawText(g, "Загружено", hintF,
                     new Rectangle(16, ty, PanelW - 32, 16), t.Success);
             }
             else
@@ -661,29 +593,25 @@ namespace ScreenSnap
                     new Rectangle(16, ty, PanelW - 32, 36), t.Text3);
                 ty += 44;
 
-                // Кнопка загрузки
                 var btnR = new RectangleF(16, ty, PanelW - 32, 28);
                 DrawingHelpers.DrawGlassCard(g, btnR, AppTheme.RButton,
                     Color.FromArgb(25, t.Yandex.R, t.Yandex.G, t.Yandex.B),
                     Color.FromArgb(80, t.Yandex.R, t.Yandex.G, t.Yandex.B));
                 using var btnF = t.FontBody(FontLoader.BodyXS, FontStyle.Bold);
-                TextRenderer.DrawText(g, "↑  Загрузить", btnF,
+                TextRenderer.DrawText(g, "Загрузить", btnF,
                     new Rectangle(16, ty, PanelW - 32, 28), t.Yandex,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             }
         }
 
-        // FIX CS0649: обработчик клика по правой панели — загрузка на Яндекс.Диск
         private async void OnRightPanelClick(object? sender, MouseEventArgs e)
         {
-            if (_yandexLink != null) return; // уже загружено
+            if (_yandexLink != null) return;
 
-            // Зона кнопки «Загрузить» внутри карточки
             int cardTop = _rightPanel.Height - 160 + 12;
             int btnTop  = cardTop + 44;
             int btnBot  = btnTop + 28;
-
-            if (e.Y < btnTop || e.Y > btnBot) return; // клик мимо кнопки
+            if (e.Y < btnTop || e.Y > btnBot) return;
 
             try
             {
@@ -705,19 +633,16 @@ namespace ScreenSnap
             var t = ThemeManager.Current;
 
             DrawingHelpers.DrawGlassCard(g,
-                new RectangleF(0, 0, _statusBar.Width, StatusH),
-                0, t.BgGlass, t.Stroke1);
+                new RectangleF(0, 0, _statusBar.Width, StatusH), 0, t.BgGlass, t.Stroke1);
 
-            using var f = t.FontMono(10f);
-            var info = _source == null
+            using var f  = t.FontMono(10f);
+            var info     = _source == null
                 ? "Нет изображения"
                 : $"{_source.Width} × {_source.Height} px   •   {_annotations.Count} объектов   •   {Path.GetFileName(_imagePath)}";
-
             TextRenderer.DrawText(g, info, f,
                 new Rectangle(16, 0, _statusBar.Width - 32, StatusH),
                 t.Text3, TextFormatFlags.VerticalCenter);
 
-            // Инструмент справа
             using var tf = t.FontBody(FontLoader.BodyXS, FontStyle.Bold);
             TextRenderer.DrawText(g, _tool.ToString(), tf,
                 new Rectangle(0, 0, _statusBar.Width - 16, StatusH),
@@ -732,7 +657,6 @@ namespace ScreenSnap
             _dragStart = e.Location;
             _dragging  = true;
 
-            // Сохраняем состояние для undo
             var snapshot = new List<Annotation>(_annotations);
             _undo.Push(snapshot);
 
@@ -747,20 +671,14 @@ namespace ScreenSnap
 
             if (_tool == Tool.Text)
             {
-                var loc = CanvasToImage(e.Location);
-                var input = Microsoft.VisualBasic.Interaction.InputBox(
-                    "Введите текст:", "Text", "");
+                var loc   = CanvasToImage(e.Location);
+                var input = Microsoft.VisualBasic.Interaction.InputBox("Введите текст:", "Text", "");
                 if (!string.IsNullOrWhiteSpace(input))
                 {
-                    _annotations.Add(new TextAnnotation
-                    {
-                        Location = loc,
-                        Text     = input,
-                        Color    = _color,
-                    });
+                    _annotations.Add(new TextAnnotation { Location = loc, Text = input, Color = _color });
                     RefreshAll();
                 }
-                _undo.Pop(); // отменяем пустой snapshot
+                _undo.Pop();
                 return;
             }
 
@@ -777,7 +695,6 @@ namespace ScreenSnap
                 return;
             }
 
-            // Начинаем рисование shape
             _drawing = CreateDrawing(e.Location);
         }
 
@@ -820,7 +737,6 @@ namespace ScreenSnap
             var from = CanvasToImage(start);
             var to   = CanvasToImage(end);
             var rect = NormalizeRect(from, to);
-
             switch (ann)
             {
                 case ArrowAnnotation a:     a.From = from; a.To = to; break;
@@ -842,7 +758,6 @@ namespace ScreenSnap
             var fmt = ext == ".jpg" || ext == ".jpeg" ? ImageFormat.Jpeg : ImageFormat.Png;
             bmp.Save(_imagePath, fmt);
             bmp.Dispose();
-
             ToastManager.Show("Сохранено", new[] { Path.GetFileName(_imagePath) });
         }
 
@@ -878,8 +793,8 @@ namespace ScreenSnap
         // ── Helpers ───────────────────────────────────────────────────────────
         private Rectangle FitImage(int imgW, int imgH, int canW, int canH, int padding)
         {
-            int availW = canW - padding * 2;
-            int availH = canH - padding * 2;
+            int availW  = canW - padding * 2;
+            int availH  = canH - padding * 2;
             float scale = Math.Min((float)availW / imgW, (float)availH / imgH);
             int dw = (int)(imgW * scale);
             int dh = (int)(imgH * scale);
@@ -909,8 +824,10 @@ namespace ScreenSnap
         private static float DistToSeg(Point p, Point a, Point b)
         {
             float dx = b.X - a.X, dy = b.Y - a.Y;
-            if (dx == 0 && dy == 0) return (float)Math.Sqrt((p.X - a.X) * (p.X - a.X) + (p.Y - a.Y) * (p.Y - a.Y));
-            float t = Math.Max(0, Math.Min(1, ((p.X - a.X) * dx + (p.Y - a.Y) * dy) / (dx * dx + dy * dy)));
+            if (dx == 0 && dy == 0)
+                return (float)Math.Sqrt((p.X - a.X) * (p.X - a.X) + (p.Y - a.Y) * (p.Y - a.Y));
+            float t  = Math.Max(0, Math.Min(1,
+                ((p.X - a.X) * dx + (p.Y - a.Y) * dy) / (dx * dx + dy * dy)));
             float px = a.X + t * dx - p.X, py = a.Y + t * dy - p.Y;
             return (float)Math.Sqrt(px * px + py * py);
         }
@@ -938,14 +855,15 @@ namespace ScreenSnap
 
         private static Button MakeWinBtn(string text, bool isClose, int width = 36)
         {
-            var t = ThemeManager.Current;
             var btn = new Button
             {
                 Text      = text,
                 Size      = new Size(width, 28),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.Transparent,
-                ForeColor = isClose ? Color.FromArgb(255, 84, 112) : Color.FromArgb(160, 245, 247, 255),
+                ForeColor = isClose
+                    ? Color.FromArgb(255, 84, 112)
+                    : Color.FromArgb(160, 245, 247, 255),
                 Font      = FontLoader.GetBody(FontLoader.BodyXS),
                 Cursor    = Cursors.Hand,
                 TabStop   = false,

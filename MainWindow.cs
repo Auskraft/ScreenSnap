@@ -8,17 +8,8 @@ using System.Windows.Forms;
 
 namespace ScreenSnap
 {
-    /// <summary>
-    /// Главное окно Auskraft Snap v2 — Фаза 4 (обновлён).
-    ///
-    /// Изменения vs Фаза 2:
-    ///   • HistoryScreen.ItemOpenRequested → EditorForm.Open()
-    ///   • AppScreen.Editor открывает последний скриншот в EditorForm
-    ///   • _btnLang переключает RU/EN через Loc
-    /// </summary>
     public sealed class MainWindow : Form
     {
-        // ── Win32 ────────────────────────────────────────────────────────────
         [DllImport("user32.dll")]
         private static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
         [DllImport("user32.dll")]
@@ -26,14 +17,12 @@ namespace ScreenSnap
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HT_CAPTION       = 0x2;
 
-        // ── Layout ───────────────────────────────────────────────────────────
-        private const int TitlebarH = AppTheme.TitlebarHeight; // 44
-        private const int SidebarW  = AppTheme.SidebarWidth;   // 220
+        private const int TitlebarH = AppTheme.TitlebarHeight;
+        private const int SidebarW  = AppTheme.SidebarWidth;
         private const int CtrlBtnW  = 36;
         private const int CtrlBtnH  = 28;
-        private const int WinRadius = AppTheme.RWindow;        // 16
+        private const int WinRadius = AppTheme.RWindow;
 
-        // ── Titlebar controls ─────────────────────────────────────────────────
         private readonly AuroraLayer   _aurora;
         private readonly Panel         _titlebar;
         private readonly Label         _brandLabel;
@@ -45,28 +34,22 @@ namespace ScreenSnap
         private readonly IconButton    _btnMax;
         private readonly IconButton    _btnClose;
 
-        // ── App body ──────────────────────────────────────────────────────────
         private readonly Panel          _appBody;
         private readonly SidebarControl _sidebar;
         private readonly Panel          _mainPane;
 
-        // ── Screens ───────────────────────────────────────────────────────────
         private readonly WorkflowsScreen _workflowsScreen;
         private readonly HistoryScreen   _historyScreen;
         private readonly Panel           _editorPlaceholder;
 
         private readonly AppSettings _settings;
         private AppScreen _currentScreen = AppScreen.Workflows;
-
-        // ── Lang toggle state ─────────────────────────────────────────────────
         private bool _isRu = true;
 
-        // ─────────────────────────────────────────────────────────────────────
         public MainWindow(AppSettings settings)
         {
             _settings = settings;
 
-            // ── Form ─────────────────────────────────────────────────────────
             Text            = "Auskraft Snap";
             FormBorderStyle = FormBorderStyle.None;
             Size            = new Size(1380, 880);
@@ -81,7 +64,6 @@ namespace ScreenSnap
 
             // ── Aurora ────────────────────────────────────────────────────────
             _aurora = new AuroraLayer { Dock = DockStyle.Fill };
-            Controls.Add(_aurora);
 
             // ── Titlebar ──────────────────────────────────────────────────────
             _titlebar = new Panel
@@ -90,7 +72,6 @@ namespace ScreenSnap
                 Dock      = DockStyle.Top,
                 BackColor = Color.Transparent,
             };
-            Controls.Add(_titlebar);
 
             _logoBox = new Panel
             {
@@ -174,7 +155,14 @@ namespace ScreenSnap
 
             _appBody.Controls.Add(_mainPane);
             _appBody.Controls.Add(_sidebar);
-            Controls.Add(_appBody);
+
+            // ── ВАЖНО: порядок добавления в форму ────────────────────────────
+            // WinForms обрабатывает Dock в обратном порядке Controls.
+            // Top добавляем последним — он первым «откусывает» 44px сверху,
+            // Fill получает оставшееся пространство и не лезет под titlebar.
+            Controls.Add(_aurora);
+            Controls.Add(_appBody);   // Fill — добавляем первым
+            Controls.Add(_titlebar);  // Top  — добавляем последним
 
             _titlebar.MouseDown   += OnTitlebarMouseDown;
             _brandLabel.MouseDown += OnTitlebarMouseDown;
@@ -214,7 +202,6 @@ namespace ScreenSnap
                     break;
 
                 case AppScreen.Editor:
-                    // Открываем последний скриншот в EditorForm
                     var exts = new[] { ".png", ".jpg", ".jpeg", ".webp" };
                     var last = Directory.Exists(_settings.SaveFolder)
                         ? Directory.GetFiles(_settings.SaveFolder)
@@ -262,7 +249,7 @@ namespace ScreenSnap
             Invalidate(true);
         }
 
-        // ── Titlebar ──────────────────────────────────────────────────────────
+        // ── Theme ─────────────────────────────────────────────────────────────
         private void ApplyTheme()
         {
             if (InvokeRequired) { Invoke(ApplyTheme); return; }
@@ -415,7 +402,6 @@ namespace ScreenSnap
             return p;
         }
 
-        // ── Public: уведомить HistoryScreen о новом снимке ────────────────────
         public void NotifyNewScreenshot(HistoryScreen.ScreenshotItem item)
         {
             _historyScreen.AddItem(item);
