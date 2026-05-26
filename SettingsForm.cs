@@ -249,6 +249,14 @@ namespace ScreenSnap
 
         private static void StyleControl(Control c, AppTheme t)
         {
+            // CheckBox и RadioButton не поддерживают Color.Transparent напрямую
+            if (c is CheckBox chk)
+            {
+                chk.BackColor = Color.FromArgb(1, 0, 0, 0); // почти прозрачный, но не Transparent
+                chk.ForeColor = t.Text1;
+                return;
+            }
+
             c.BackColor = c is TextBox || c is ComboBox
                 ? Color.FromArgb(16, 255, 255, 255)
                 : Color.Transparent;

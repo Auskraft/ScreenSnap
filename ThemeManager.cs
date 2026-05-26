@@ -13,12 +13,11 @@ namespace ScreenSnap
 
     public class AccentColors
     {
-        public Color A1 { get; init; }   // gradient stop 1
-        public Color A2 { get; init; }   // gradient stop 2 / main
-        public Color A3 { get; init; }   // gradient stop 3
-        public Color Glow { get; init; } // A2 at 45% alpha
+        public Color A1 { get; init; }
+        public Color A2 { get; init; }
+        public Color A3 { get; init; }
+        public Color Glow { get; init; }
 
-        // Convenience: create a 135° linear brush for the accent gradient
         public LinearGradientBrush MakeGradientBrush(RectangleF rect)
             => new(rect, A1, A3, 135f);
     }
@@ -54,10 +53,10 @@ namespace ScreenSnap
         public Color Warning { get; init; } = Color.FromArgb(0xFF, 0xB2, 0x3F);
         public Color Yandex  { get; init; } = Color.FromArgb(0xFC, 0x3F, 0x1D);
 
-        // Accent (depends on palette)
+        // Accent
         public AccentColors Accent { get; init; } = null!;
 
-        // Radii (in pixels — use in GraphicsPath)
+        // Radii
         public const int RXs     = 6;
         public const int RSm     = 10;
         public const int RMd     = 14;
@@ -71,7 +70,7 @@ namespace ScreenSnap
         public const int TitlebarHeight = 44;
         public const int SidebarWidth   = 220;
 
-        // Fonts (resolved at runtime via FontLoader)
+        // Fonts
         public Font FontDisplay(float size, FontStyle style = FontStyle.Regular)
             => FontLoader.GetDisplay(size, style);
         public Font FontBody(float size, FontStyle style = FontStyle.Regular)
@@ -87,12 +86,12 @@ namespace ScreenSnap
     {
         public static event EventHandler? ThemeChanged;
 
-        private static AppThemeMode   _mode   = AppThemeMode.Dark;
-        private static AccentPalette  _accent = AccentPalette.Violet;
-        private static AppTheme?      _cache;
+        private static AppThemeMode  _mode   = AppThemeMode.Dark;
+        private static AccentPalette _accent = AccentPalette.Violet;
+        private static AppTheme?     _cache;
 
-        public static AppThemeMode  Mode   => _mode;
-        public static AccentPalette Accent => _accent;
+        public static AppThemeMode  Mode    => _mode;
+        public static AccentPalette Accent  => _accent;
         public static AppTheme      Current => _cache ??= Build(_mode, _accent);
 
         public static void SetMode(AppThemeMode mode)
@@ -122,45 +121,39 @@ namespace ScreenSnap
             return mode == AppThemeMode.Dark
                 ? new AppTheme
                 {
-                    // dark surfaces
-                    Bg0          = HexColor("#07070C"),
-                    Bg1          = HexColor("#0A0A12"),
-                    Bg2          = HexColor("#11111C"),
-                    Bg3          = HexColor("#161624"),
-                    BgGlass      = ArgbColor(20,  22,  35, (int)(0.55 * 255)),
-                    BgGlassStrong= ArgbColor(14,  16,  26, (int)(0.78 * 255)),
-                    BgElevated   = ArgbColor(28,  30,  46, (int)(0.85 * 255)),
-                    // dark strokes
-                    Stroke1      = ArgbColor(255, 255, 255, (int)(0.06 * 255)),
-                    Stroke2      = ArgbColor(255, 255, 255, (int)(0.10 * 255)),
-                    Stroke3      = ArgbColor(255, 255, 255, (int)(0.16 * 255)),
-                    // dark text
-                    Text1        = HexColor("#F5F7FF"),
-                    Text2        = ArgbColor(245, 247, 255, (int)(0.66 * 255)),
-                    Text3        = ArgbColor(245, 247, 255, (int)(0.42 * 255)),
-                    Text4        = ArgbColor(245, 247, 255, (int)(0.24 * 255)),
-                    Accent       = accent,
+                    Bg0           = HexColor("#07070C"),
+                    Bg1           = HexColor("#0A0A12"),
+                    Bg2           = HexColor("#11111C"),
+                    Bg3           = HexColor("#161624"),
+                    BgGlass       = ArgbColor(20,  22,  35, (int)(0.55 * 255)),
+                    BgGlassStrong = ArgbColor(14,  16,  26, (int)(0.78 * 255)),
+                    BgElevated    = ArgbColor(28,  30,  46, (int)(0.85 * 255)),
+                    Stroke1       = ArgbColor(255, 255, 255, (int)(0.06 * 255)),
+                    Stroke2       = ArgbColor(255, 255, 255, (int)(0.10 * 255)),
+                    Stroke3       = ArgbColor(255, 255, 255, (int)(0.16 * 255)),
+                    Text1         = HexColor("#F5F7FF"),
+                    Text2         = ArgbColor(245, 247, 255, (int)(0.66 * 255)),
+                    Text3         = ArgbColor(245, 247, 255, (int)(0.42 * 255)),
+                    Text4         = ArgbColor(245, 247, 255, (int)(0.24 * 255)),
+                    Accent        = accent,
                 }
                 : new AppTheme
                 {
-                    // light surfaces
-                    Bg0          = HexColor("#ECEEF5"),
-                    Bg1          = HexColor("#F3F4FA"),
-                    Bg2          = HexColor("#FFFFFF"),
-                    Bg3          = HexColor("#F7F8FC"),
-                    BgGlass      = ArgbColor(255, 255, 255, (int)(0.70 * 255)),
-                    BgGlassStrong= ArgbColor(255, 255, 255, (int)(0.88 * 255)),
-                    BgElevated   = ArgbColor(255, 255, 255, (int)(0.96 * 255)),
-                    // light strokes
-                    Stroke1      = ArgbColor(13,  16,  36, (int)(0.06 * 255)),
-                    Stroke2      = ArgbColor(13,  16,  36, (int)(0.10 * 255)),
-                    Stroke3      = ArgbColor(13,  16,  36, (int)(0.16 * 255)),
-                    // light text
-                    Text1        = HexColor("#0B0D1C"),
-                    Text2        = ArgbColor(11,  13,  28, (int)(0.66 * 255)),
-                    Text3        = ArgbColor(11,  13,  28, (int)(0.42 * 255)),
-                    Text4        = ArgbColor(11,  13,  28, (int)(0.22 * 255)),
-                    Accent       = accent,
+                    Bg0           = HexColor("#ECEEF5"),
+                    Bg1           = HexColor("#F3F4FA"),
+                    Bg2           = HexColor("#FFFFFF"),
+                    Bg3           = HexColor("#F7F8FC"),
+                    BgGlass       = ArgbColor(255, 255, 255, (int)(0.70 * 255)),
+                    BgGlassStrong = ArgbColor(255, 255, 255, (int)(0.88 * 255)),
+                    BgElevated    = ArgbColor(255, 255, 255, (int)(0.96 * 255)),
+                    Stroke1       = ArgbColor(13,  16,  36, (int)(0.06 * 255)),
+                    Stroke2       = ArgbColor(13,  16,  36, (int)(0.10 * 255)),
+                    Stroke3       = ArgbColor(13,  16,  36, (int)(0.16 * 255)),
+                    Text1         = HexColor("#0B0D1C"),
+                    Text2         = ArgbColor(11,  13,  28, (int)(0.66 * 255)),
+                    Text3         = ArgbColor(11,  13,  28, (int)(0.42 * 255)),
+                    Text4         = ArgbColor(11,  13,  28, (int)(0.22 * 255)),
+                    Accent        = accent,
                 };
         }
 
@@ -201,7 +194,6 @@ namespace ScreenSnap
         private static Color HexColor(string hex)
             => ColorTranslator.FromHtml(hex);
 
-        /// <summary>r, g, b in 0-255; a in 0-255</summary>
         private static Color ArgbColor(int r, int g, int b, int a)
             => Color.FromArgb(a, r, g, b);
     }
@@ -211,15 +203,30 @@ namespace ScreenSnap
     // ─────────────────────────────────────────────
     public static class DrawingHelpers
     {
-        /// <summary>Create a rounded-rectangle GraphicsPath.</summary>
+        /// <summary>
+        /// Create a rounded-rectangle GraphicsPath.
+        /// Safe against degenerate rects and oversized radii.
+        /// </summary>
         public static GraphicsPath RoundedRect(RectangleF rect, float radius)
         {
-            var d  = radius * 2;
+            // Guard: degenerate rect — return empty path instead of throwing
+            if (rect.Width < 1f || rect.Height < 1f)
+                return new GraphicsPath();
+
+            // Clamp radius so arcs never overlap; guard against negative input
+            radius = Math.Max(0f, Math.Min(radius, Math.Min(rect.Width / 2f, rect.Height / 2f)));
             var path = new GraphicsPath();
-            path.AddArc(rect.X,             rect.Y,             d, d, 180, 90);
-            path.AddArc(rect.Right - d,     rect.Y,             d, d, 270, 90);
-            path.AddArc(rect.Right - d,     rect.Bottom - d,    d, d, 0,   90);
-            path.AddArc(rect.X,             rect.Bottom - d,    d, d, 90,  90);
+            // Если radius == 0 — просто прямоугольник, без дуг
+            if (radius < 1f)
+            {
+                path.AddRectangle(rect);
+                return path;
+            }
+            var d = radius * 2f;
+            path.AddArc(rect.X,         rect.Y,          d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y,          d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0,   90);
+            path.AddArc(rect.X,         rect.Bottom - d, d, d, 90,  90);
             path.CloseFigure();
             return path;
         }
@@ -230,7 +237,7 @@ namespace ScreenSnap
         public static void DrawGlassCard(Graphics g, RectangleF rect, float radius,
             Color fill, Color stroke)
         {
-            using var path = RoundedRect(rect, radius);
+            using var path  = RoundedRect(rect, radius);
             using var brush = new SolidBrush(fill);
             g.FillPath(brush, path);
             using var pen = new Pen(stroke, 1f);
@@ -246,11 +253,10 @@ namespace ScreenSnap
         {
             using var path = RoundedRect(rect, radius);
             g.SetClip(path);
-            // LinearGradientBrush only does 2 stops — simulate 3 with a blend
             using var brush = new LinearGradientBrush(rect, accent.A1, accent.A3, 135f);
             var blend = new ColorBlend(3)
             {
-                Colors = new[] { accent.A1, accent.A2, accent.A3 },
+                Colors    = new[] { accent.A1, accent.A2, accent.A3 },
                 Positions = new[] { 0f, 0.5f, 1f }
             };
             brush.InterpolationColors = blend;

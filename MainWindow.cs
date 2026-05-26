@@ -271,6 +271,9 @@ namespace ScreenSnap
 
         private void LayoutTitlebar()
         {
+            // Защита от вызова до инициализации контролов
+            if (_btnClose == null) return;
+
             int x = 18;
             _logoBox.Location    = new Point(x, (TitlebarH - 22) / 2);
             x += 32;
@@ -367,8 +370,10 @@ namespace ScreenSnap
         public event EventHandler? CommandPaletteRequested;
 
         private void OnCommandPaletteTrigger()
-            => CommandPaletteRequested?.Invoke(this, EventArgs.Empty);
-
+        {
+            CommandPaletteRequested?.Invoke(this, EventArgs.Empty);
+            CommandPalette.Open(this);
+        }
         // ── Helpers ───────────────────────────────────────────────────────────
         private Panel MakePlaceholder(string icon, string message)
         {
@@ -411,6 +416,7 @@ namespace ScreenSnap
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
+            if (_btnClose == null) return;
             LayoutTitlebar();
         }
 

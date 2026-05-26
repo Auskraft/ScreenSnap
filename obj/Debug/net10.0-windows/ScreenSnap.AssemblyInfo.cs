@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AuskraftSnap")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+46b0b639941a38e10cd10c0781a24f420e80e535")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+278e4a979b96bb28174e5006c17e3f5ef1f09031")]
 [assembly: System.Reflection.AssemblyProductAttribute("AuskraftSnap")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AuskraftSnap")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

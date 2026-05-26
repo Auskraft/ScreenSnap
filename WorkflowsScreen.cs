@@ -284,6 +284,9 @@ namespace ScreenSnap
             int lx  = Width - LibW - 4;
             int ly  = 28;
 
+            // Защита от рисования до нормального размера
+            if (Width < LibW + 20 || Height < 60) return;
+
             // Фоновая панель
             DrawingHelpers.DrawGlassCard(g,
                 new RectangleF(lx - 8, 0, LibW + 12, Height),
