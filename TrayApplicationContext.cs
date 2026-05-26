@@ -13,6 +13,10 @@ namespace ScreenSnap
         private readonly WorkflowManager _workflowManager;
         private MainWindow?             _mainWindow;
 
+        // ── Repeat last ───────────────────────────────────────────────────────
+        private enum LastAction { None, FullScreen, Region, ActiveWindow }
+        private LastAction _lastAction = LastAction.None;
+
         public TrayApplicationContext()
         {
             _settings         = AppSettings.Load();
@@ -51,6 +55,8 @@ namespace ScreenSnap
             _hotkeyManager.PrivacyModePressed    += () => RunWorkflowAsync(WorkflowKind.PrivacyMode);
             _hotkeyManager.SavePinPressed        += () => RunWorkflowAsync(WorkflowKind.SavePin);
             _hotkeyManager.CommandPalettePressed += OpenCommandPalette;
+            _hotkeyManager.ActiveWindowPressed   += CaptureActiveWindow;   // Фаза 4
+            _hotkeyManager.RepeatLastPressed     += RepeatLast;             // Фаза 4
 
             _hotkeyManager.Register(_settings);
 
@@ -69,24 +75,26 @@ namespace ScreenSnap
         {
             var menu = new ContextMenuStrip();
 
-            AddItem(menu, "Открыть Auskraft Snap",               () => OpenMainWindow());
+            AddItem(menu, "Открыть Auskraft Snap",                  () => OpenMainWindow());
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "📸 Скриншот области  Ctrl+Shift+A",   () => CaptureRegion());
-            AddItem(menu, "⚡ Quick Share  Ctrl+Shift+S",         () => RunWorkflowAsync(WorkflowKind.QuickShare));
-            AddItem(menu, "✏️ Documentation Mode  Ctrl+Shift+D",  () => RunWorkflowAsync(WorkflowKind.DocMode));
-            AddItem(menu, "🛡 Privacy Mode  Ctrl+Shift+P",        () => RunWorkflowAsync(WorkflowKind.PrivacyMode));
-            AddItem(menu, "📌 Save & Pin  Ctrl+Shift+T",          () => RunWorkflowAsync(WorkflowKind.SavePin));
+            AddItem(menu, "📸 Скриншот области  Ctrl+Shift+A",      () => CaptureRegion());
+            AddItem(menu, "🪟 Активное окно  Ctrl+Shift+W",          () => CaptureActiveWindow());
+            AddItem(menu, "⚡ Quick Share  Ctrl+Shift+S",            () => RunWorkflowAsync(WorkflowKind.QuickShare));
+            AddItem(menu, "✏️ Documentation Mode  Ctrl+Shift+D",     () => RunWorkflowAsync(WorkflowKind.DocMode));
+            AddItem(menu, "🛡 Privacy Mode  Ctrl+Shift+P",           () => RunWorkflowAsync(WorkflowKind.PrivacyMode));
+            AddItem(menu, "📌 Save & Pin  Ctrl+Shift+T",             () => RunWorkflowAsync(WorkflowKind.SavePin));
+            AddItem(menu, "🔁 Повторить последнее  Ctrl+Shift+R",    () => RepeatLast());
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "🌙 Переключить тему",                  () => ThemeManager.Toggle());
+            AddItem(menu, "🌙 Переключить тему",                     () => ThemeManager.Toggle());
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "⚙️ Настройки",                        () => new SettingsForm(_settings).ShowDialog());
-            AddItem(menu, "🎓 Онбординг",                         () => OnboardingForm.ShowIfNeeded(_settings, force: true));
+            AddItem(menu, "⚙️ Настройки",                           () => new SettingsForm(_settings).ShowDialog());
+            AddItem(menu, "🎓 Онбординг",                            () => OnboardingForm.ShowIfNeeded(_settings, force: true));
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "❌ Выход",                             () => ExitApplication());
+            AddItem(menu, "❌ Выход",                                () => ExitApplication());
 
             return menu;
         }
@@ -127,6 +135,7 @@ namespace ScreenSnap
                 _trayIcon.ShowBalloonTip(2000, "Auskraft Snap",
                     $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
                 NotifyMainWindow(path, pinned: false);
+                _lastAction = LastAction.Region;
             }
             _mainWindow?.Show();
         }
@@ -139,6 +148,49 @@ namespace ScreenSnap
             _trayIcon.ShowBalloonTip(2000, "Auskraft Snap",
                 $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
             NotifyMainWindow(path, pinned: false);
+            _lastAction = LastAction.FullScreen;
+        }
+
+        private void CaptureActiveWindow()
+        {
+            // Небольшая задержка чтобы наше окно не попало в захват
+            System.Threading.Tasks.Task.Delay(150).ContinueWith(_ =>
+            {
+                var bmp = HotkeyManager.CaptureActiveWindow();
+                if (bmp == null) return;
+
+                var folder = _settings.SaveFolder;
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
+
+                var fileName = $"window_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.png";
+                var path     = Path.Combine(folder, fileName);
+                bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+                bmp.Dispose();
+
+                if (_settings.CopyToClipboard)
+                    Clipboard.SetImage(new Bitmap(path));
+
+                _trayIcon.ShowBalloonTip(2000, "Auskraft Snap",
+                    $"Окно захвачено: {fileName}", ToolTipIcon.Info);
+
+                NotifyMainWindow(path, pinned: false);
+                _lastAction = LastAction.ActiveWindow;
+            }, System.Threading.Tasks.TaskScheduler.Default);
+        }
+
+        private void RepeatLast()
+        {
+            switch (_lastAction)
+            {
+                case LastAction.FullScreen:    CaptureFullScreen();   break;
+                case LastAction.Region:        CaptureRegion();       break;
+                case LastAction.ActiveWindow:  CaptureActiveWindow(); break;
+                case LastAction.None:
+                    _trayIcon.ShowBalloonTip(1500, "Auskraft Snap",
+                        "Нет предыдущего действия", ToolTipIcon.Info);
+                    break;
+            }
         }
 
         // ── Workflow ──────────────────────────────────────────────────────────

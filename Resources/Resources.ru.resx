@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string"/>
+              <xsd:attribute name="xml:space" default="preserve"/>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+
+  <!-- App -->
+  <data name="app_name" xml:space="preserve"><value>Auskraft Snap</value></data>
+  <data name="app_tagline" xml:space="preserve"><value>Инструмент для скриншотов</value></data>
+
+  <!-- Tray -->
+  <data name="tray_open" xml:space="preserve"><value>Открыть Auskraft Snap</value></data>
+  <data name="tray_exit" xml:space="preserve"><value>Выход</value></data>
+  <data name="tray_settings" xml:space="preserve"><value>Настройки</value></data>
+  <data name="tray_onboarding" xml:space="preserve"><value>Онбординг</value></data>
+  <data name="tray_toggle_theme" xml:space="preserve"><value>Переключить тему</value></data>
+
+  <!-- Capture -->
+  <data name="capture_fullscreen" xml:space="preserve"><value>Полный экран</value></data>
+  <data name="capture_region" xml:space="preserve"><value>Выделить область</value></data>
+  <data name="capture_window" xml:space="preserve"><value>Активное окно</value></data>
+  <data name="capture_repeat" xml:space="preserve"><value>Повторить последнее</value></data>
+  <data name="capture_saved" xml:space="preserve"><value>Сохранено: {0}</value></data>
+  <data name="capture_window_saved" xml:space="preserve"><value>Окно захвачено: {0}</value></data>
+  <data name="capture_no_last" xml:space="preserve"><value>Нет предыдущего действия</value></data>
+
+  <!-- Share overlay -->
+  <data name="share_done" xml:space="preserve"><value>Загружено!</value></data>
+  <data name="share_open" xml:space="preserve"><value>Открыть</value></data>
+  <data name="share_md" xml:space="preserve"><value>Markdown</value></data>
+  <data name="share_html" xml:space="preserve"><value>HTML</value></data>
+  <data name="share_qr" xml:space="preserve"><value>QR-код</value></data>
+  <data name="share_delete" xml:space="preserve"><value>Удалить</value></data>
+  <data name="share_dismiss" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="share_copy_link" xml:space="preserve"><value>Копировать ссылку</value></data>
+  <data name="share_copied" xml:space="preserve"><value>Скопировано!</value></data>
+
+  <!-- Command palette -->
+  <data name="cmd_placeholder" xml:space="preserve"><value>Введите команду…</value></data>
+  <data name="cmd_capture" xml:space="preserve"><value>Захват</value></data>
+  <data name="cmd_workflows" xml:space="preserve"><value>Воркфлоу</value></data>
+  <data name="cmd_library" xml:space="preserve"><value>Библиотека</value></data>
+  <data name="cmd_actions" xml:space="preserve"><value>Действия</value></data>
+  <data name="cmd_jump" xml:space="preserve"><value>Перейти</value></data>
+
+  <!-- Workflows -->
+  <data name="wf_quick_share" xml:space="preserve"><value>Быстрый шаринг</value></data>
+  <data name="wf_doc_mode" xml:space="preserve"><value>Режим документации</value></data>
+  <data name="wf_privacy_mode" xml:space="preserve"><value>Режим приватности</value></data>
+  <data name="wf_save_pin" xml:space="preserve"><value>Сохранить и закрепить</value></data>
+
+  <!-- Toast steps -->
+  <data name="step_capture" xml:space="preserve"><value>Захват области</value></data>
+  <data name="step_compress" xml:space="preserve"><value>Сжатие в WEBP</value></data>
+  <data name="step_upload" xml:space="preserve"><value>Загрузка на Яндекс.Диск</value></data>
+  <data name="step_copy_link" xml:space="preserve"><value>Копировать ссылку</value></data>
+  <data name="step_blur" xml:space="preserve"><value>Применить размытие</value></data>
+  <data name="step_save" xml:space="preserve"><value>Сохранить файл</value></data>
+  <data name="step_pin" xml:space="preserve"><value>Закрепить в истории</value></data>
+
+  <!-- Editor -->
+  <data name="editor_title" xml:space="preserve"><value>Редактор — Auskraft Snap</value></data>
+  <data name="editor_save" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="editor_copy" xml:space="preserve"><value>Копировать</value></data>
+  <data name="editor_undo" xml:space="preserve"><value>Отменить</value></data>
+  <data name="editor_layers" xml:space="preserve"><value>Слои</value></data>
+  <data name="editor_no_objects" xml:space="preserve"><value>Нет объектов</value></data>
+  <data name="editor_saved" xml:space="preserve"><value>Сохранено</value></data>
+  <data name="editor_copied" xml:space="preserve"><value>Изображение в буфере</value></data>
+  <data name="editor_text_prompt" xml:space="preserve"><value>Введите текст:</value></data>
+  <data name="editor_upload" xml:space="preserve"><value>Загрузить</value></data>
+  <data name="editor_uploaded" xml:space="preserve"><value>Загружено</value></data>
+  <data name="editor_no_image" xml:space="preserve"><value>Изображение не загружено</value></data>
+
+  <!-- Settings -->
+  <data name="settings_title" xml:space="preserve"><value>Настройки</value></data>
+  <data name="settings_general" xml:space="preserve"><value>Основные</value></data>
+  <data name="settings_hotkeys" xml:space="preserve"><value>Хоткеи</value></data>
+  <data name="settings_appearance" xml:space="preserve"><value>Внешний вид</value></data>
+  <data name="settings_storage" xml:space="preserve"><value>Хранилище</value></data>
+  <data name="settings_cloud" xml:space="preserve"><value>Облако</value></data>
+  <data name="settings_editor" xml:space="preserve"><value>Редактор</value></data>
+  <data name="settings_privacy" xml:space="preserve"><value>Приватность</value></data>
+  <data name="settings_workflows" xml:space="preserve"><value>Воркфлоу</value></data>
+  <data name="settings_about" xml:space="preserve"><value>О программе</value></data>
+
+  <!-- Onboarding -->
+  <data name="onboarding_next" xml:space="preserve"><value>Далее</value></data>
+  <data name="onboarding_start" xml:space="preserve"><value>Начать</value></data>
+  <data name="onboarding_skip" xml:space="preserve"><value>Пропустить</value></data>
+  <data name="onboarding_step1_title" xml:space="preserve"><value>Молниеносные скриншоты</value></data>
+  <data name="onboarding_step1_body" xml:space="preserve"><value>Захватывай экран одним нажатием. Полный экран, область или активное окно.</value></data>
+  <data name="onboarding_step2_title" xml:space="preserve"><value>Мощные воркфлоу</value></data>
+  <data name="onboarding_step2_body" xml:space="preserve"><value>Автоматизируй захват, сжатие, загрузку и шаринг одним хоткеем.</value></data>
+  <data name="onboarding_step3_title" xml:space="preserve"><value>Командная палитра</value></data>
+  <data name="onboarding_step3_body" xml:space="preserve"><value>Нажми Ctrl+K чтобы мгновенно получить доступ к любому действию без мыши.</value></data>
+  <data name="onboarding_step4_title" xml:space="preserve"><value>Облачный инструмент</value></data>
+  <data name="onboarding_step4_body" xml:space="preserve"><value>Загружай напрямую на Яндекс.Диск и получай ссылку за секунды.</value></data>
+
+  <!-- History -->
+  <data name="history_all" xml:space="preserve"><value>Все</value></data>
+  <data name="history_uploaded" xml:space="preserve"><value>Загружено</value></data>
+  <data name="history_local" xml:space="preserve"><value>Только локальные</value></data>
+  <data name="history_pinned" xml:space="preserve"><value>Закреплённые</value></data>
+  <data name="history_empty" xml:space="preserve"><value>Скриншотов пока нет</value></data>
+
+  <!-- Common -->
+  <data name="btn_ok" xml:space="preserve"><value>ОК</value></data>
+  <data name="btn_cancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="btn_close" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="btn_save" xml:space="preserve"><value>Сохранить</value></data>
+</root>

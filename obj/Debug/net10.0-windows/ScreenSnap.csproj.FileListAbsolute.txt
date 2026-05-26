@@ -97,3 +97,9 @@ C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\refint\Ausk
 C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\AuskraftSnap.pdb
 C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.genruntimeconfig.cache
 C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ref\AuskraftSnap.dll
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\bin\Debug\net10.0-windows\ru\AuskraftSnap.resources.dll
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.Resources.Resources.resources
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.Resources.Resources.ru.resources
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ScreenSnap.csproj.GenerateResource.cache
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ru\AuskraftSnap.resources.cs
+C:\Users\Auskraft_PC\ScreenSnap\ScreenSnap\obj\Debug\net10.0-windows\ru\AuskraftSnap.resources.dll

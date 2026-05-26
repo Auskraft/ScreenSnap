@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string"/>
+              <xsd:attribute name="xml:space" default="preserve"/>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+
+  <!-- App -->
+  <data name="app_name" xml:space="preserve"><value>Auskraft Snap</value></data>
+  <data name="app_tagline" xml:space="preserve"><value>Screenshot tool</value></data>
+
+  <!-- Tray -->
+  <data name="tray_open" xml:space="preserve"><value>Open Auskraft Snap</value></data>
+  <data name="tray_exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="tray_settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="tray_onboarding" xml:space="preserve"><value>Onboarding</value></data>
+  <data name="tray_toggle_theme" xml:space="preserve"><value>Toggle theme</value></data>
+
+  <!-- Capture -->
+  <data name="capture_fullscreen" xml:space="preserve"><value>Full screen</value></data>
+  <data name="capture_region" xml:space="preserve"><value>Capture region</value></data>
+  <data name="capture_window" xml:space="preserve"><value>Active window</value></data>
+  <data name="capture_repeat" xml:space="preserve"><value>Repeat last</value></data>
+  <data name="capture_saved" xml:space="preserve"><value>Saved: {0}</value></data>
+  <data name="capture_window_saved" xml:space="preserve"><value>Window captured: {0}</value></data>
+  <data name="capture_no_last" xml:space="preserve"><value>No previous action</value></data>
+
+  <!-- Share overlay -->
+  <data name="share_done" xml:space="preserve"><value>Uploaded!</value></data>
+  <data name="share_open" xml:space="preserve"><value>Open</value></data>
+  <data name="share_md" xml:space="preserve"><value>Markdown</value></data>
+  <data name="share_html" xml:space="preserve"><value>HTML</value></data>
+  <data name="share_qr" xml:space="preserve"><value>QR Code</value></data>
+  <data name="share_delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="share_dismiss" xml:space="preserve"><value>Dismiss</value></data>
+  <data name="share_copy_link" xml:space="preserve"><value>Copy link</value></data>
+  <data name="share_copied" xml:space="preserve"><value>Copied!</value></data>
+
+  <!-- Command palette -->
+  <data name="cmd_placeholder" xml:space="preserve"><value>Type a command…</value></data>
+  <data name="cmd_capture" xml:space="preserve"><value>Capture</value></data>
+  <data name="cmd_workflows" xml:space="preserve"><value>Workflows</value></data>
+  <data name="cmd_library" xml:space="preserve"><value>Library</value></data>
+  <data name="cmd_actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="cmd_jump" xml:space="preserve"><value>Jump to</value></data>
+
+  <!-- Workflows -->
+  <data name="wf_quick_share" xml:space="preserve"><value>Quick Share</value></data>
+  <data name="wf_doc_mode" xml:space="preserve"><value>Documentation Mode</value></data>
+  <data name="wf_privacy_mode" xml:space="preserve"><value>Privacy Mode</value></data>
+  <data name="wf_save_pin" xml:space="preserve"><value>Save &amp; Pin</value></data>
+
+  <!-- Toast steps -->
+  <data name="step_capture" xml:space="preserve"><value>Capture region</value></data>
+  <data name="step_compress" xml:space="preserve"><value>Compress to WEBP</value></data>
+  <data name="step_upload" xml:space="preserve"><value>Upload to Yandex Disk</value></data>
+  <data name="step_copy_link" xml:space="preserve"><value>Copy link</value></data>
+  <data name="step_blur" xml:space="preserve"><value>Apply blur</value></data>
+  <data name="step_save" xml:space="preserve"><value>Save file</value></data>
+  <data name="step_pin" xml:space="preserve"><value>Pin to history</value></data>
+
+  <!-- Editor -->
+  <data name="editor_title" xml:space="preserve"><value>Editor — Auskraft Snap</value></data>
+  <data name="editor_save" xml:space="preserve"><value>Save</value></data>
+  <data name="editor_copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="editor_undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="editor_layers" xml:space="preserve"><value>Layers</value></data>
+  <data name="editor_no_objects" xml:space="preserve"><value>No objects</value></data>
+  <data name="editor_saved" xml:space="preserve"><value>Saved</value></data>
+  <data name="editor_copied" xml:space="preserve"><value>Copied to clipboard</value></data>
+  <data name="editor_text_prompt" xml:space="preserve"><value>Enter text:</value></data>
+  <data name="editor_upload" xml:space="preserve"><value>Upload</value></data>
+  <data name="editor_uploaded" xml:space="preserve"><value>Uploaded</value></data>
+  <data name="editor_no_image" xml:space="preserve"><value>Image not loaded</value></data>
+
+  <!-- Settings -->
+  <data name="settings_title" xml:space="preserve"><value>Settings</value></data>
+  <data name="settings_general" xml:space="preserve"><value>General</value></data>
+  <data name="settings_hotkeys" xml:space="preserve"><value>Hotkeys</value></data>
+  <data name="settings_appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="settings_storage" xml:space="preserve"><value>Storage</value></data>
+  <data name="settings_cloud" xml:space="preserve"><value>Cloud</value></data>
+  <data name="settings_editor" xml:space="preserve"><value>Editor</value></data>
+  <data name="settings_privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="settings_workflows" xml:space="preserve"><value>Workflows</value></data>
+  <data name="settings_about" xml:space="preserve"><value>About</value></data>
+
+  <!-- Onboarding -->
+  <data name="onboarding_next" xml:space="preserve"><value>Next</value></data>
+  <data name="onboarding_start" xml:space="preserve"><value>Get started</value></data>
+  <data name="onboarding_skip" xml:space="preserve"><value>Skip</value></data>
+  <data name="onboarding_step1_title" xml:space="preserve"><value>Lightning-fast screenshots</value></data>
+  <data name="onboarding_step1_body" xml:space="preserve"><value>Capture your screen in one keystroke. Full screen, region, or active window.</value></data>
+  <data name="onboarding_step2_title" xml:space="preserve"><value>Powerful workflows</value></data>
+  <data name="onboarding_step2_body" xml:space="preserve"><value>Automate capture, compress, upload and share with one shortcut.</value></data>
+  <data name="onboarding_step3_title" xml:space="preserve"><value>Command Palette</value></data>
+  <data name="onboarding_step3_body" xml:space="preserve"><value>Press Ctrl+K to access every action instantly without leaving your keyboard.</value></data>
+  <data name="onboarding_step4_title" xml:space="preserve"><value>Cloud-native</value></data>
+  <data name="onboarding_step4_body" xml:space="preserve"><value>Upload directly to Yandex Disk and get a shareable link in seconds.</value></data>
+
+  <!-- History -->
+  <data name="history_all" xml:space="preserve"><value>All</value></data>
+  <data name="history_uploaded" xml:space="preserve"><value>Uploaded</value></data>
+  <data name="history_local" xml:space="preserve"><value>Local only</value></data>
+  <data name="history_pinned" xml:space="preserve"><value>Pinned</value></data>
+  <data name="history_empty" xml:space="preserve"><value>No screenshots yet</value></data>
+
+  <!-- Common -->
+  <data name="btn_ok" xml:space="preserve"><value>OK</value></data>
+  <data name="btn_cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="btn_close" xml:space="preserve"><value>Close</value></data>
+  <data name="btn_save" xml:space="preserve"><value>Save</value></data>
+</root>

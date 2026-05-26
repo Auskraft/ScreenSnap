@@ -13,6 +13,11 @@
         },
         "runtime": {
           "AuskraftSnap.dll": {}
+        },
+        "resources": {
+          "ru/AuskraftSnap.resources.dll": {
+            "locale": "ru"
+          }
         }
       },
       "DotNetEnv/3.2.0": {
