@@ -20,8 +20,11 @@ namespace ScreenSnap
     public sealed class HistoryScreen : UserControl
     {
         // ── События ──────────────────────────────────────────────────────────
-        /// Просят открыть Command Palette (фаза 3)
+        /// Просят открыть Command Palette
         public event EventHandler? SearchRequested;
+
+        /// Просят открыть файл в редакторе (передаётся FilePath)
+        public event EventHandler<string>? ItemOpenRequested;
 
         // ── Модель данных ─────────────────────────────────────────────────────
         public enum FilterMode { All, Uploaded, LocalOnly, Pinned }
@@ -151,16 +154,13 @@ namespace ScreenSnap
         {
             var rect = new RectangleF(x, y, Width - x * 2, HeroH);
 
-            // Стеклянная карточка
             DrawingHelpers.DrawGlassCard(g, rect, AppTheme.RMd, t.BgGlass, t.Stroke1);
 
-            // Акцентный gradient strip слева
             using var stripBrush = new LinearGradientBrush(
                 new RectangleF(x, y, 4, HeroH),
                 t.Accent.A1, t.Accent.A3, 90f);
             g.FillRectangle(stripBrush, x + 1, y + 12, 3, HeroH - 24);
 
-            // Слоган
             using var headFont = t.FontDisplay(FontLoader.DisplayS, FontStyle.Bold);
             TextRenderer.DrawText(g, "Capture → Upload → Link.", headFont,
                 new Rectangle(x + 20, y + 14, (int)rect.Width - 40, 28), t.Text1);
@@ -170,7 +170,6 @@ namespace ScreenSnap
                 new Rectangle(x + 20, y + 44, 200, 20),
                 Color.FromArgb(200, t.Accent.A2.R, t.Accent.A2.G, t.Accent.A2.B));
 
-            // Кол-во снимков справа
             using var cntFont = t.FontDisplay(22f, FontStyle.Bold);
             var cntText  = _allItems.Count.ToString();
             var cntSize  = TextRenderer.MeasureText(cntText, cntFont);
@@ -197,7 +196,6 @@ namespace ScreenSnap
         {
             int cx = x;
 
-            // Фильтры
             foreach (var (mode, label) in Filters)
             {
                 bool active = _filter == mode;
@@ -223,7 +221,6 @@ namespace ScreenSnap
                 cx += fw + 6;
             }
 
-            // Поиск — справа
             int sw   = 200;
             int sx   = Width - PadX - sw;
             var srect = new Rectangle(sx, y, sw, SearchH);
@@ -255,7 +252,7 @@ namespace ScreenSnap
                 int x   = startX + col * (tileW + TileGapX);
                 int y   = startY + row * (TileH  + TileGapY);
 
-                if (y > Height + _scrollY) break;  // вне экрана — не рисуем
+                if (y > Height + _scrollY) break;
 
                 DrawTile(g, t, _filtered[i], i, x, y, tileW);
             }
@@ -272,18 +269,16 @@ namespace ScreenSnap
                 : t.BgGlass;
             DrawingHelpers.DrawGlassCard(g, rect, AppTheme.RSm, fill, t.Stroke1);
 
-            // Превью-зона (верхние 96px)
             var thumbRect = new Rectangle(x + 1, y + 1, tileW - 2, 96);
             if (item.Thumb != null)
             {
                 g.SetClip(new RectangleF(thumbRect.X, thumbRect.Y,
-    thumbRect.Width, thumbRect.Height));
+                    thumbRect.Width, thumbRect.Height));
                 g.DrawImage(item.Thumb, thumbRect);
                 g.ResetClip();
             }
             else
             {
-                // Заглушка: тёмный прямоугольник
                 using var ph = new SolidBrush(Color.FromArgb(20, 255, 255, 255));
                 g.FillRectangle(ph, thumbRect);
 
@@ -292,12 +287,10 @@ namespace ScreenSnap
                 TextRenderer.DrawText(g, ext, ef, thumbRect, t.Text4,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
 
-                // Асинхронно загружаем thumbnail
                 if (!string.IsNullOrEmpty(item.FilePath))
                     LoadThumbAsync(item);
             }
 
-            // Имя файла
             int metaY = y + 102;
             using var nameFont = t.FontBody(10f);
             var nameTrunc = TruncateName(item.FileName, 28);
@@ -305,7 +298,6 @@ namespace ScreenSnap
                 new Rectangle(x + 8, metaY, tileW - 16, 16), t.Text2);
             metaY += 18;
 
-            // Дата + размер
             using var metaFont = t.FontMono(9f);
             var dateStr = item.Taken.ToString("dd.MM.yy  HH:mm");
             var sizeStr = FormatBytes(item.Bytes);
@@ -315,7 +307,6 @@ namespace ScreenSnap
                 new Rectangle(x + tileW / 2, metaY, tileW / 2 - 8, 14), t.Text4,
                 TextFormatFlags.Right);
 
-            // Uploaded badge
             if (item.Uploaded)
             {
                 var br = new Rectangle(x + tileW - 54, y + 6, 46, 16);
@@ -327,12 +318,23 @@ namespace ScreenSnap
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             }
 
-            // Pinned badge
             if (item.Pinned)
             {
                 using var pinF = t.FontBody(11f);
                 TextRenderer.DrawText(g, "📌", pinF,
                     new Rectangle(x + 6, y + 4, 18, 18), t.Text2);
+            }
+
+            // Hover: подсказка "открыть в редакторе"
+            if (hovered)
+            {
+                using var hintF = t.FontBody(FontLoader.BodyXS, FontStyle.Bold);
+                var hintR = new Rectangle(x + 1, y + 70, tileW - 2, 24);
+                using var hintBg = new SolidBrush(Color.FromArgb(160, 5, 5, 12));
+                g.FillRectangle(hintBg, hintR);
+                TextRenderer.DrawText(g, "✏  Открыть в редакторе", hintF, hintR,
+                    Color.FromArgb(200, 245, 247, 255),
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             }
         }
 
@@ -382,6 +384,14 @@ namespace ScreenSnap
                 SearchRequested?.Invoke(this, EventArgs.Empty);
                 return;
             }
+
+            // Плитка → открыть в редакторе
+            int tileIdx = HitTestTile(e.Location) ?? -1;
+            if (tileIdx >= 0)
+            {
+                ItemOpenRequested?.Invoke(this, _filtered[tileIdx].FilePath);
+                return;
+            }
         }
 
         private void OnMouseMove(object? sender, MouseEventArgs e)
@@ -392,7 +402,7 @@ namespace ScreenSnap
 
         private int HitTestFilter(Point p)
         {
-            int y  = PadX + HeroH + 20;
+            int y  = PadX + HeroH + 20 - _scrollY;
             int cx = PadX;
             for (int i = 0; i < Filters.Length; i++)
             {
@@ -407,7 +417,7 @@ namespace ScreenSnap
 
         private bool HitTestSearch(Point p)
         {
-            int y  = PadX + HeroH + 20;
+            int y  = PadX + HeroH + 20 - _scrollY;
             int sw = 200;
             int sx = Width - PadX - sw;
             return new Rectangle(sx, y, sw, SearchH).Contains(p);
@@ -432,7 +442,6 @@ namespace ScreenSnap
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
-        // Мини-хак для HitTest без GDI-объекта
         private Font t_FontHack(bool bold) =>
             ThemeManager.Current.FontBody(FontLoader.BodyXS,
                 bold ? FontStyle.Bold : FontStyle.Regular);

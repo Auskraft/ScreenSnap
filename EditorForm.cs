@@ -115,11 +115,10 @@ namespace ScreenSnap
                 => new Rectangle(Location.X, Location.Y, 120, 24).Contains(p);
         }
 
+        // FIX CS0414: убраны _cache и Invalidate() — Draw() их не использовал
         private class BlurAnnotation : Annotation
         {
             public Rectangle Bounds;
-            private Bitmap? _cache;
-            public void Invalidate() => _cache = null;
             public override void Draw(Graphics g)
             {
                 // Простая имитация blur через масштабирование
@@ -214,6 +213,7 @@ namespace ScreenSnap
         private Point                          _dragStart;
         private bool                           _dragging;
         private int                            _stepCounter = 1;
+        // FIX CS0649: _yandexLink теперь присваивается в OnRightPanelClick
         private string?                        _yandexLink;
 
         // ── Panels ────────────────────────────────────────────────────────────
@@ -303,7 +303,8 @@ namespace ScreenSnap
                 Dock      = DockStyle.Right,
                 BackColor = Color.Transparent,
             };
-            _rightPanel.Paint += DrawRightPanel;
+            _rightPanel.Paint       += DrawRightPanel;
+            _rightPanel.MouseClick  += OnRightPanelClick; // FIX CS0649: подключаем кнопку загрузки
 
             // Canvas
             _canvas = new Panel
@@ -539,7 +540,6 @@ namespace ScreenSnap
             {
                 if (ann == _selected)
                 {
-                    // Обводка выделения
                     var oldG = g.SmoothingMode;
                     g.SmoothingMode = SmoothingMode.AntiAlias;
                     ann.Draw(g);
@@ -670,6 +670,31 @@ namespace ScreenSnap
                 TextRenderer.DrawText(g, "↑  Загрузить", btnF,
                     new Rectangle(16, ty, PanelW - 32, 28), t.Yandex,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            }
+        }
+
+        // FIX CS0649: обработчик клика по правой панели — загрузка на Яндекс.Диск
+        private async void OnRightPanelClick(object? sender, MouseEventArgs e)
+        {
+            if (_yandexLink != null) return; // уже загружено
+
+            // Зона кнопки «Загрузить» внутри карточки
+            int cardTop = _rightPanel.Height - 160 + 12;
+            int btnTop  = cardTop + 44;
+            int btnBot  = btnTop + 28;
+
+            if (e.Y < btnTop || e.Y > btnBot) return; // клик мимо кнопки
+
+            try
+            {
+                var svc = new YandexDiskService();
+                svc.SetToken(_settings.YandexToken);
+                _yandexLink = await svc.GetPublicLinkAsync(Path.GetFileName(_imagePath));
+                _rightPanel.Invalidate();
+            }
+            catch (Exception ex)
+            {
+                ToastManager.Show("Ошибка загрузки", new[] { ex.Message });
             }
         }
 
@@ -818,7 +843,7 @@ namespace ScreenSnap
             bmp.Save(_imagePath, fmt);
             bmp.Dispose();
 
-            ToastManager.Show("✅ Сохранено", new[] { Path.GetFileName(_imagePath) });
+            ToastManager.Show("Сохранено", new[] { Path.GetFileName(_imagePath) });
         }
 
         private void OnCopy(object? sender, EventArgs e)
@@ -826,7 +851,7 @@ namespace ScreenSnap
             if (_source == null) return;
             var bmp = RenderFinal();
             Clipboard.SetImage(bmp);
-            ToastManager.Show("📋 Скопировано", new[] { "Изображение в буфере" });
+            ToastManager.Show("Скопировано", new[] { "Изображение в буфере" });
         }
 
         private void OnUndo(object? sender, EventArgs e)

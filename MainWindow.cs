@@ -1,19 +1,20 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace ScreenSnap
 {
     /// <summary>
-    /// Главное окно Auskraft Snap v2 — Фаза 2.
+    /// Главное окно Auskraft Snap v2 — Фаза 4 (обновлён).
     ///
-    /// Изменения vs Фаза 1:
-    ///   • _sidebar заменён на SidebarControl — полная навигация
-    ///   • _mainPane содержит WorkflowsScreen / HistoryScreen / EditorPlaceholder / SettingsForm
-    ///   • Переключение экранов по событию SidebarControl.ScreenRequested
-    ///   • CommandPaletteRequested пробрасывается из _sidebar и searchTrigger
+    /// Изменения vs Фаза 2:
+    ///   • HistoryScreen.ItemOpenRequested → EditorForm.Open()
+    ///   • AppScreen.Editor открывает последний скриншот в EditorForm
+    ///   • _btnLang переключает RU/EN через Loc
     /// </summary>
     public sealed class MainWindow : Form
     {
@@ -49,16 +50,16 @@ namespace ScreenSnap
         private readonly SidebarControl _sidebar;
         private readonly Panel          _mainPane;
 
-        // ── Screens (Phase 2) ─────────────────────────────────────────────────
+        // ── Screens ───────────────────────────────────────────────────────────
         private readonly WorkflowsScreen _workflowsScreen;
         private readonly HistoryScreen   _historyScreen;
         private readonly Panel           _editorPlaceholder;
 
-        // Settings открывается как модальное окно (отдельная форма)
         private readonly AppSettings _settings;
-
-        // ── Current screen ────────────────────────────────────────────────────
         private AppScreen _currentScreen = AppScreen.Workflows;
+
+        // ── Lang toggle state ─────────────────────────────────────────────────
+        private bool _isRu = true;
 
         // ─────────────────────────────────────────────────────────────────────
         public MainWindow(AppSettings settings)
@@ -91,7 +92,6 @@ namespace ScreenSnap
             };
             Controls.Add(_titlebar);
 
-            // Logo box
             _logoBox = new Panel
             {
                 Size      = new Size(22, 22),
@@ -99,7 +99,6 @@ namespace ScreenSnap
             };
             _logoBox.Paint += OnLogoPaint;
 
-            // Brand label
             _brandLabel = new Label
             {
                 Text      = "Auskraft Snap",
@@ -108,7 +107,6 @@ namespace ScreenSnap
                 Cursor    = Cursors.SizeAll,
             };
 
-            // Search trigger → Command Palette
             _searchTrigger = new Panel
             {
                 Width     = 340,
@@ -121,16 +119,16 @@ namespace ScreenSnap
             _searchTrigger.MouseEnter += (_, _) => _searchTrigger.Invalidate();
             _searchTrigger.MouseLeave += (_, _) => _searchTrigger.Invalidate();
 
-            // Window control buttons
             _btnTheme = new IconButton("🌙", CtrlBtnW, CtrlBtnH);
             _btnTheme.Click += (_, _) => { ThemeManager.Toggle(); ApplyTheme(); };
 
-            _btnLang  = new IconButton("EN", CtrlBtnW, CtrlBtnH);
+            _btnLang = new IconButton("RU", CtrlBtnW, CtrlBtnH);
+            _btnLang.Click += OnLangToggle;
 
-            _btnMin   = new IconButton("─", CtrlBtnW, CtrlBtnH);
+            _btnMin = new IconButton("─", CtrlBtnW, CtrlBtnH);
             _btnMin.Click += (_, _) => WindowState = FormWindowState.Minimized;
 
-            _btnMax   = new IconButton("□", CtrlBtnW, CtrlBtnH);
+            _btnMax = new IconButton("□", CtrlBtnW, CtrlBtnH);
             _btnMax.Click += (_, _) =>
                 WindowState = WindowState == FormWindowState.Maximized
                     ? FormWindowState.Normal : FormWindowState.Maximized;
@@ -151,28 +149,25 @@ namespace ScreenSnap
                 BackColor = Color.Transparent,
             };
 
-            // Sidebar (Phase 2 — полная навигация)
             _sidebar = new SidebarControl();
             _sidebar.ScreenRequested += OnSidebarScreenRequested;
 
-            // Main pane — контейнер для экранов
             _mainPane = new Panel
             {
                 Dock      = DockStyle.Fill,
                 BackColor = Color.Transparent,
             };
 
-            // Screens
             _workflowsScreen = new WorkflowsScreen();
             _historyScreen   = new HistoryScreen();
-            _historyScreen.SearchRequested += (_, _) => OnCommandPaletteTrigger();
+            _historyScreen.SearchRequested   += (_, _) => OnCommandPaletteTrigger();
+            _historyScreen.ItemOpenRequested += OnItemOpenRequested;
 
-            _editorPlaceholder = MakePlaceholder("✏️  Editor", "Появится в Фазе 4.");
+            _editorPlaceholder = MakePlaceholder("✏  Editor",
+                "Сделай скриншот чтобы открыть его здесь.");
 
-            // Загружаем историю из папки настроек
             _historyScreen.LoadFolder(_settings.SaveFolder);
 
-            // Добавляем все экраны в mainPane (скрытые)
             _mainPane.Controls.Add(_workflowsScreen);
             _mainPane.Controls.Add(_historyScreen);
             _mainPane.Controls.Add(_editorPlaceholder);
@@ -181,19 +176,15 @@ namespace ScreenSnap
             _appBody.Controls.Add(_sidebar);
             Controls.Add(_appBody);
 
-            // ── Drag ──────────────────────────────────────────────────────────
             _titlebar.MouseDown   += OnTitlebarMouseDown;
             _brandLabel.MouseDown += OnTitlebarMouseDown;
 
-            // ── Theme ─────────────────────────────────────────────────────────
             ThemeManager.ThemeChanged += (_, _) => ApplyTheme();
             ApplyTheme();
 
-            // ── Aurora ────────────────────────────────────────────────────────
             _aurora.SendToBack();
             _aurora.StartAnimation();
 
-            // Показываем стартовый экран
             ShowScreen(AppScreen.Workflows);
 
             Resize += (_, _) => LayoutTitlebar();
@@ -201,19 +192,16 @@ namespace ScreenSnap
 
         // ── Screen switching ──────────────────────────────────────────────────
         private void OnSidebarScreenRequested(object? sender, AppScreen screen)
-        {
-            ShowScreen(screen);
-        }
+            => ShowScreen(screen);
 
         public void ShowScreen(AppScreen screen)
         {
             _currentScreen = screen;
             _sidebar.SetActive(screen);
 
-            // Скрываем все
-            _workflowsScreen.Visible    = false;
-            _historyScreen.Visible      = false;
-            _editorPlaceholder.Visible  = false;
+            _workflowsScreen.Visible   = false;
+            _historyScreen.Visible     = false;
+            _editorPlaceholder.Visible = false;
 
             switch (screen)
             {
@@ -226,15 +214,26 @@ namespace ScreenSnap
                     break;
 
                 case AppScreen.Editor:
-                    _editorPlaceholder.Visible = true;
+                    // Открываем последний скриншот в EditorForm
+                    var exts = new[] { ".png", ".jpg", ".jpeg", ".webp" };
+                    var last = Directory.Exists(_settings.SaveFolder)
+                        ? Directory.GetFiles(_settings.SaveFolder)
+                            .Where(f => exts.Contains(
+                                Path.GetExtension(f).ToLowerInvariant()))
+                            .OrderByDescending(File.GetLastWriteTime)
+                            .FirstOrDefault()
+                        : null;
+
+                    if (last != null)
+                        EditorForm.Open(last, _settings);
+                    else
+                        _editorPlaceholder.Visible = true;
                     break;
 
                 case AppScreen.Settings:
-                    // Settings — модальная форма поверх
                     using (var sf = new SettingsForm(_settings))
                     {
                         sf.ShowDialog(this);
-                        // После закрытия settings — остаёмся на предыдущем экране
                         ShowScreen(_currentScreen == AppScreen.Settings
                             ? AppScreen.Workflows
                             : _currentScreen);
@@ -243,6 +242,24 @@ namespace ScreenSnap
             }
 
             Invalidate();
+        }
+
+        // ── Editor from History tile ──────────────────────────────────────────
+        private void OnItemOpenRequested(object? sender, string filePath)
+        {
+            if (File.Exists(filePath))
+                EditorForm.Open(filePath, _settings);
+        }
+
+        // ── Lang toggle ───────────────────────────────────────────────────────
+        private void OnLangToggle(object? sender, EventArgs e)
+        {
+            _isRu = !_isRu;
+            Loc.Culture = _isRu
+                ? new System.Globalization.CultureInfo("ru")
+                : System.Globalization.CultureInfo.InvariantCulture;
+            _btnLang.SetLabel(_isRu ? "RU" : "EN");
+            Invalidate(true);
         }
 
         // ── Titlebar ──────────────────────────────────────────────────────────
@@ -271,7 +288,6 @@ namespace ScreenSnap
 
         private void LayoutTitlebar()
         {
-            // Защита от вызова до инициализации контролов
             if (_btnClose == null) return;
 
             int x = 18;
@@ -315,7 +331,7 @@ namespace ScreenSnap
 
         private void OnLogoPaint(object? sender, PaintEventArgs e)
         {
-            var g   = e.Graphics;
+            var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
             var acc = ThemeManager.Current.Accent;
             DrawingHelpers.DrawAccentFill(g, new RectangleF(0, 0, 22, 22), acc, 6);
@@ -374,6 +390,7 @@ namespace ScreenSnap
             CommandPaletteRequested?.Invoke(this, EventArgs.Empty);
             CommandPalette.Open(this);
         }
+
         // ── Helpers ───────────────────────────────────────────────────────────
         private Panel MakePlaceholder(string icon, string message)
         {

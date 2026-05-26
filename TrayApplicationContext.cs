@@ -55,8 +55,8 @@ namespace ScreenSnap
             _hotkeyManager.PrivacyModePressed    += () => RunWorkflowAsync(WorkflowKind.PrivacyMode);
             _hotkeyManager.SavePinPressed        += () => RunWorkflowAsync(WorkflowKind.SavePin);
             _hotkeyManager.CommandPalettePressed += OpenCommandPalette;
-            _hotkeyManager.ActiveWindowPressed   += CaptureActiveWindow;   // Фаза 4
-            _hotkeyManager.RepeatLastPressed     += RepeatLast;             // Фаза 4
+            _hotkeyManager.ActiveWindowPressed   += CaptureActiveWindow;
+            _hotkeyManager.RepeatLastPressed     += RepeatLast;
 
             _hotkeyManager.Register(_settings);
 
@@ -75,26 +75,26 @@ namespace ScreenSnap
         {
             var menu = new ContextMenuStrip();
 
-            AddItem(menu, "Открыть Auskraft Snap",                  () => OpenMainWindow());
+            AddItem(menu, "Открыть Auskraft Snap",                () => OpenMainWindow());
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "📸 Скриншот области  Ctrl+Shift+A",      () => CaptureRegion());
-            AddItem(menu, "🪟 Активное окно  Ctrl+Shift+W",          () => CaptureActiveWindow());
-            AddItem(menu, "⚡ Quick Share  Ctrl+Shift+S",            () => RunWorkflowAsync(WorkflowKind.QuickShare));
-            AddItem(menu, "✏️ Documentation Mode  Ctrl+Shift+D",     () => RunWorkflowAsync(WorkflowKind.DocMode));
-            AddItem(menu, "🛡 Privacy Mode  Ctrl+Shift+P",           () => RunWorkflowAsync(WorkflowKind.PrivacyMode));
-            AddItem(menu, "📌 Save & Pin  Ctrl+Shift+T",             () => RunWorkflowAsync(WorkflowKind.SavePin));
-            AddItem(menu, "🔁 Повторить последнее  Ctrl+Shift+R",    () => RepeatLast());
+            AddItem(menu, "Скриншот области  Ctrl+Shift+A",      () => CaptureRegion());
+            AddItem(menu, "Активное окно  Ctrl+Shift+W",          () => CaptureActiveWindow());
+            AddItem(menu, "Quick Share  Ctrl+Shift+S",            () => RunWorkflowAsync(WorkflowKind.QuickShare));
+            AddItem(menu, "Documentation Mode  Ctrl+Shift+D",     () => RunWorkflowAsync(WorkflowKind.DocMode));
+            AddItem(menu, "Privacy Mode  Ctrl+Shift+P",           () => RunWorkflowAsync(WorkflowKind.PrivacyMode));
+            AddItem(menu, "Save & Pin  Ctrl+Shift+T",             () => RunWorkflowAsync(WorkflowKind.SavePin));
+            AddItem(menu, "Повторить последнее  Ctrl+Shift+R",    () => RepeatLast());
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "🌙 Переключить тему",                     () => ThemeManager.Toggle());
+            AddItem(menu, "Переключить тему",                     () => ThemeManager.Toggle());
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "⚙️ Настройки",                           () => new SettingsForm(_settings).ShowDialog());
-            AddItem(menu, "🎓 Онбординг",                            () => OnboardingForm.ShowIfNeeded(_settings, force: true));
+            AddItem(menu, "Настройки",                            () => new SettingsForm(_settings).ShowDialog());
+            AddItem(menu, "Онбординг",                            () => OnboardingForm.ShowIfNeeded(_settings, force: true));
             menu.Items.Add(new ToolStripSeparator());
 
-            AddItem(menu, "❌ Выход",                                () => ExitApplication());
+            AddItem(menu, "Выход",                                () => ExitApplication());
 
             return menu;
         }
@@ -153,7 +153,6 @@ namespace ScreenSnap
 
         private void CaptureActiveWindow()
         {
-            // Небольшая задержка чтобы наше окно не попало в захват
             System.Threading.Tasks.Task.Delay(150).ContinueWith(_ =>
             {
                 var bmp = HotkeyManager.CaptureActiveWindow();
@@ -225,6 +224,8 @@ namespace ScreenSnap
         private void OnPinRequested(object? sender, string path)
         {
             NotifyMainWindow(path, pinned: true);
+            // Показываем floating overlay поверх всех окон
+            Overlays.PinOverlay.Show(path, _settings);
         }
 
         // ── CommandPalette ────────────────────────────────────────────────────
