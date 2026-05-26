@@ -23,6 +23,13 @@ namespace ScreenSnap
         private const int CtrlBtnH  = 28;
         private const int WinRadius = AppTheme.RWindow;
 
+        // Минимальные отступы от краёв до поисковой строки
+        private const int SearchMinMargin = 12;
+        // Ширина блока правых кнопок: 2 утилиты + 3 win-ctrl + зазор
+        private const int RightBlockW = CtrlBtnW * 5 + 8;
+        // Ширина левого блока: лого + бренд + отступ
+        private const int LeftBlockW  = 18 + 22 + 8 + 120;
+
         private readonly AuroraLayer   _aurora;
         private readonly Panel         _titlebar;
         private readonly Label         _brandLabel;
@@ -88,9 +95,10 @@ namespace ScreenSnap
                 Cursor    = Cursors.SizeAll,
             };
 
+            // ── FIX: поисковая строка — ширина динамическая, пересчитывается в LayoutTitlebar
             _searchTrigger = new Panel
             {
-                Width     = 340,
+                Width     = 340,   // начальное значение, потом пересчитается
                 Height    = 26,
                 BackColor = Color.Transparent,
                 Cursor    = Cursors.Hand,
@@ -156,13 +164,9 @@ namespace ScreenSnap
             _appBody.Controls.Add(_mainPane);
             _appBody.Controls.Add(_sidebar);
 
-            // ── ВАЖНО: порядок добавления в форму ────────────────────────────
-            // WinForms обрабатывает Dock в обратном порядке Controls.
-            // Top добавляем последним — он первым «откусывает» 44px сверху,
-            // Fill получает оставшееся пространство и не лезет под titlebar.
             Controls.Add(_aurora);
-            Controls.Add(_appBody);   // Fill — добавляем первым
-            Controls.Add(_titlebar);  // Top  — добавляем последним
+            Controls.Add(_appBody);
+            Controls.Add(_titlebar);
 
             _titlebar.MouseDown   += OnTitlebarMouseDown;
             _brandLabel.MouseDown += OnTitlebarMouseDown;
@@ -172,6 +176,9 @@ namespace ScreenSnap
 
             _aurora.SendToBack();
             _aurora.StartAnimation();
+
+            foreach (Control c in _titlebar.Controls)
+                 if (c is IconButton btn) btn.ApplyTheme(ThemeManager.Current);
 
             ShowScreen(AppScreen.Workflows);
 
@@ -277,22 +284,37 @@ namespace ScreenSnap
         {
             if (_btnClose == null) return;
 
+            // ── Левый блок: лого + бренд ──────────────────────────────────────
             int x = 18;
             _logoBox.Location    = new Point(x, (TitlebarH - 22) / 2);
-            x += 32;
+            x += 30;
             _brandLabel.Location = new Point(x, (TitlebarH - _brandLabel.Height) / 2);
 
-            _searchTrigger.Location = new Point(
-                (Width - _searchTrigger.Width) / 2,
-                (TitlebarH - 26) / 2);
-
-            int rx = Width - 12;
+            // ── Правый блок: кнопки справа налево ─────────────────────────────
+            int rx = Width - 8;
             rx -= CtrlBtnW; _btnClose.Location = new Point(rx, (TitlebarH - CtrlBtnH) / 2);
             rx -= CtrlBtnW; _btnMax.Location   = new Point(rx, (TitlebarH - CtrlBtnH) / 2);
             rx -= CtrlBtnW; _btnMin.Location   = new Point(rx, (TitlebarH - CtrlBtnH) / 2);
             rx -= 8;
             rx -= CtrlBtnW; _btnLang.Location  = new Point(rx, (TitlebarH - CtrlBtnH) / 2);
             rx -= CtrlBtnW; _btnTheme.Location = new Point(rx, (TitlebarH - CtrlBtnH) / 2);
+
+            // ── FIX: поисковая строка занимает пространство между блоками ─────
+            // Левый край = конец brandLabel + отступ
+            int searchLeft  = _brandLabel.Right + 16;
+            // Правый край = начало _btnTheme - отступ
+            int searchRight = _btnTheme.Left - 16;
+            int searchW     = searchRight - searchLeft;
+
+            // Ограничиваем: не уже 200px и не шире 500px
+            searchW = Math.Max(200, Math.Min(500, searchW));
+
+            _searchTrigger.Width    = searchW;
+            _searchTrigger.Location = new Point(
+                searchLeft + (searchRight - searchLeft - searchW) / 2,
+                (TitlebarH - 26) / 2);
+
+            _searchTrigger.Invalidate();
         }
 
         // ── Paint ─────────────────────────────────────────────────────────────
@@ -347,18 +369,25 @@ namespace ScreenSnap
             TextRenderer.DrawText(g, "⌕", iconFont, new Point(10, 5), t.Text3);
 
             using var bodyFont = t.FontBody(FontLoader.BodyXS);
-            TextRenderer.DrawText(g, "Search, commands, workflows…", bodyFont,
-                new Point(28, 5), t.Text3);
 
+            // ── FIX: Ctrl+K badge — считаем от правого края панели ────────────
             var kbdText = "Ctrl+K";
             var kbdSize = TextRenderer.MeasureText(kbdText, bodyFont);
+            int kbdW    = kbdSize.Width + 10;
             var kbdRect = new Rectangle(
-                _searchTrigger.Width - kbdSize.Width - 16, 5,
-                kbdSize.Width + 10, 16);
+                _searchTrigger.Width - kbdW - 8, 5,
+                kbdW, 16);
             DrawingHelpers.DrawGlassCard(g, kbdRect, AppTheme.RXs,
                 Color.FromArgb(15, 255, 255, 255), t.Stroke2);
             TextRenderer.DrawText(g, kbdText, bodyFont, kbdRect, t.Text2,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+
+            // Плейсхолдер — между иконкой и badge
+            var phRect = new Rectangle(28, 5, kbdRect.Left - 32, 16);
+            TextRenderer.DrawText(g, "Search, commands, workflows…", bodyFont,
+                phRect, t.Text3,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
+                TextFormatFlags.EndEllipsis);
         }
 
         // ── Drag ──────────────────────────────────────────────────────────────

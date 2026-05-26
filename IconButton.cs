@@ -7,7 +7,7 @@ namespace ScreenSnap
     public sealed class IconButton : Button
     {
         private readonly bool _isClose;
-        private bool _isTextLabel = false; // true = текст типа "RU"/"EN", false = emoji/символ
+        private bool _isTextLabel = false;
 
         public IconButton(string text, int width, int height, bool isClose = false)
         {
@@ -15,14 +15,13 @@ namespace ScreenSnap
             Text      = text;
             Size      = new Size(width, height);
             FlatStyle = FlatStyle.Flat;
-            FlatAppearance.BorderSize          = 0;
-            FlatAppearance.MouseOverBackColor  = Color.Transparent;
-            FlatAppearance.MouseDownBackColor  = Color.Transparent;
+            FlatAppearance.BorderSize         = 0;
+            FlatAppearance.MouseOverBackColor = Color.Transparent;
+            FlatAppearance.MouseDownBackColor = Color.Transparent;
             BackColor = Color.Transparent;
             Cursor    = Cursors.Hand;
             TabStop   = false;
 
-            // Определяем: это emoji/символ или обычный текст
             _isTextLabel = IsPlainText(text);
             ApplyFont();
         }
@@ -30,17 +29,15 @@ namespace ScreenSnap
         public void ApplyTheme(AppTheme t)
         {
             ForeColor = t.Text2;
-            // Шрифт пересчитываем с учётом типа кнопки
             Font = _isTextLabel
                 ? t.FontBody(FontLoader.BodyXS, System.Drawing.FontStyle.Bold)
                 : new System.Drawing.Font("Segoe UI Emoji", 11f);
             Invalidate();
         }
 
-        /// Обновить текст кнопки (используется для RU/EN переключателя)
         public void SetLabel(string label)
         {
-            Text = label;
+            Text         = label;
             _isTextLabel = IsPlainText(label);
             ApplyFont();
             Invalidate();
@@ -48,25 +45,28 @@ namespace ScreenSnap
 
         private void ApplyFont()
         {
-            // Emoji используют Segoe UI Emoji — системный шрифт с полной поддержкой emoji
-            // Обычный текст (RU, EN, —, □) — Segoe UI
             Font = _isTextLabel
                 ? new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold)
                 : new System.Drawing.Font("Segoe UI Emoji", 11f);
         }
 
-        // Текст считается plain если все символы ASCII или кириллица (не emoji)
         private static bool IsPlainText(string s)
         {
+            if (string.IsNullOrEmpty(s)) return true;
             foreach (char c in s)
-                if (c > 0x2FFF) return false; // emoji и спецсимволы выше U+2FFF
+            {
+                if (char.IsWhiteSpace(c)) continue;
+                if (char.IsLetter(c) || char.IsDigit(c)) continue;
+                return false;
+            }
             return true;
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.SmoothingMode      = SmoothingMode.AntiAlias;
+            g.TextRenderingHint  = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
             bool hover = ClientRectangle.Contains(PointToClient(Cursor.Position));
             bool down  = MouseButtons == MouseButtons.Left && hover;
@@ -83,9 +83,14 @@ namespace ScreenSnap
                 g.FillPath(br, path);
             }
 
-            TextRenderer.DrawText(g, Text, Font,
-                ClientRectangle, ForeColor,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            // ── FIX: Graphics.DrawString корректно рендерит emoji через Segoe UI Emoji
+            using var sf = new StringFormat
+            {
+                Alignment     = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center,
+            };
+            using var brush = new SolidBrush(ForeColor);
+            g.DrawString(Text, Font, brush, new RectangleF(0, 0, Width, Height), sf);
         }
 
         protected override void OnMouseEnter(EventArgs e) { base.OnMouseEnter(e); Invalidate(); }

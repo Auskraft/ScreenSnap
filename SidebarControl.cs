@@ -12,22 +12,13 @@ namespace ScreenSnap
 
     // ═══════════════════════════════════════════════════════════════════════
     //  SidebarControl — боковая панель 220px
-    //
-    //  Секции:
-    //    • Основная навигация: Workflows / History / Editor / Settings
-    //    • Collections: Pinned / Shared / Local / Trash
-    //    • Cloud: Яндекс.Диск + статус
-    //    • User pod (снизу)
     // ═══════════════════════════════════════════════════════════════════════
     public sealed class SidebarControl : UserControl
     {
-        // ── События ──────────────────────────────────────────────────────────
         public event EventHandler<AppScreen>? ScreenRequested;
 
-        // ── Состояние ────────────────────────────────────────────────────────
         private AppScreen _activeScreen = AppScreen.Workflows;
 
-        // Счётчики бейджей (обновляются снаружи через SetBadge)
         private readonly Dictionary<AppScreen, int> _badges = new()
         {
             { AppScreen.Workflows, 4  },
@@ -36,33 +27,35 @@ namespace ScreenSnap
             { AppScreen.Settings,  0  },
         };
 
-        // Счётчики коллекций
         private int _cntPinned  = 3;
         private int _cntShared  = 19;
         private int _cntLocal   = 4;
         private int _cntTrash   = 12;
 
-        // Яндекс.Диск
         private bool   _diskConnected = false;
         private bool   _diskSyncing   = false;
         private string _diskLogin     = "Не подключён";
 
-        // ── Layout constants ──────────────────────────────────────────────────
+        // ── Layout ────────────────────────────────────────────────────────────
         private const int PadX     = 14;
         private const int NavItemH = 36;
         private const int ColItemH = 28;
         private const int SecGap   = 20;
         private const int UserPodH = 52;
 
-        // ── Tooltip ──────────────────────────────────────────────────────────
+        // Отступы внутри nav-item
+        private const int IconX     = PadX + 8;   // x иконки
+        private const int IconW     = 22;
+        private const int LabelX    = PadX + 34;  // x лейбла
+        private const int BadgeW    = 28;          // ширина бейджа
+
         private readonly ToolTip _tooltip = new();
 
-        // ─────────────────────────────────────────────────────────────────────
         public SidebarControl()
         {
-            Width         = AppTheme.SidebarWidth;
-            Dock          = DockStyle.Left;
-            BackColor     = Color.Transparent;
+            Width          = AppTheme.SidebarWidth;
+            Dock           = DockStyle.Left;
+            BackColor      = Color.Transparent;
             DoubleBuffered = true;
 
             SetStyle(ControlStyles.AllPaintingInWmPaint  |
@@ -70,27 +63,16 @@ namespace ScreenSnap
                      ControlStyles.UserPaint              |
                      ControlStyles.ResizeRedraw, true);
 
-            MouseClick  += OnMouseClick;
-            MouseMove   += OnMouseMove;
+            MouseClick += OnMouseClick;
+            MouseMove  += OnMouseMove;
 
             ThemeManager.ThemeChanged += (_, _) => Invalidate();
         }
 
         // ── Public API ────────────────────────────────────────────────────────
-        public void SetActive(AppScreen screen)
-        {
-            _activeScreen = screen;
-            Invalidate();
-        }
-
-        public void SetBadge(AppScreen screen, int count)
-        {
-            _badges[screen] = count;
-            Invalidate();
-        }
-
-        public int GetBadge(AppScreen screen)
-            => _badges.GetValueOrDefault(screen, 0);
+        public void SetActive(AppScreen screen)       { _activeScreen = screen; Invalidate(); }
+        public void SetBadge(AppScreen screen, int n) { _badges[screen] = n;    Invalidate(); }
+        public int  GetBadge(AppScreen screen)        => _badges.GetValueOrDefault(screen, 0);
 
         public void SetDiskStatus(bool connected, bool syncing, string login = "")
         {
@@ -102,10 +84,8 @@ namespace ScreenSnap
 
         public void SetCollectionCounts(int pinned, int shared, int local, int trash)
         {
-            _cntPinned = pinned;
-            _cntShared = shared;
-            _cntLocal  = local;
-            _cntTrash  = trash;
+            _cntPinned = pinned; _cntShared = shared;
+            _cntLocal  = local;  _cntTrash  = trash;
             Invalidate();
         }
 
@@ -118,36 +98,31 @@ namespace ScreenSnap
 
             var t = ThemeManager.Current;
 
-            // Правая граница
             using var borderPen = new Pen(t.Stroke1, 1f);
             g.DrawLine(borderPen, Width - 1, 0, Width - 1, Height);
 
             int y = 16;
 
-            // ── Nav section ───────────────────────────────────────────────────
             DrawNavItem(g, t, ref y, AppScreen.Workflows, "⚡", "Workflows");
             DrawNavItem(g, t, ref y, AppScreen.History,   "🕐", "History");
             DrawNavItem(g, t, ref y, AppScreen.Editor,    "✏️", "Editor");
-            DrawNavItem(g, t, ref y, AppScreen.Settings,  "⚙", "Settings");
+            DrawNavItem(g, t, ref y, AppScreen.Settings,  "⚙",  "Settings");
 
             y += SecGap;
             DrawDivider(g, t, y); y += 1 + SecGap;
 
-            // ── Collections ───────────────────────────────────────────────────
             DrawSectionLabel(g, t, ref y, "Collections");
-            DrawCollectionItem(g, t, ref y, "📌", "Pinned",  _cntPinned);
-            DrawCollectionItem(g, t, ref y, "🔗", "Shared",  _cntShared);
-            DrawCollectionItem(g, t, ref y, "💾", "Local",   _cntLocal);
-            DrawCollectionItem(g, t, ref y, "🗑", "Trash",   _cntTrash);
+            DrawCollectionItem(g, t, ref y, "📌", "Pinned", _cntPinned);
+            DrawCollectionItem(g, t, ref y, "🔗", "Shared", _cntShared);
+            DrawCollectionItem(g, t, ref y, "💾", "Local",  _cntLocal);
+            DrawCollectionItem(g, t, ref y, "🗑",  "Trash",  _cntTrash);
 
             y += SecGap;
             DrawDivider(g, t, y); y += 1 + SecGap;
 
-            // ── Cloud ─────────────────────────────────────────────────────────
             DrawSectionLabel(g, t, ref y, "Cloud");
             DrawDiskItem(g, t, ref y);
 
-            // ── User pod (прибит к низу) ──────────────────────────────────────
             DrawUserPod(g, t);
         }
 
@@ -160,22 +135,18 @@ namespace ScreenSnap
 
             if (active)
             {
-                // Акцентный фон
-                using var path   = DrawingHelpers.RoundedRect(rect, AppTheme.RSm);
-                using var brush  = new SolidBrush(
+                using var path  = DrawingHelpers.RoundedRect(rect, AppTheme.RSm);
+                using var brush = new SolidBrush(
                     Color.FromArgb(18, t.Accent.A2.R, t.Accent.A2.G, t.Accent.A2.B));
                 g.FillPath(brush, path);
 
-                // Левая акцентная полоска 3px
                 using var accentBrush = new LinearGradientBrush(
                     new RectangleF(PadX, y, 3, NavItemH),
                     t.Accent.A1, t.Accent.A3, 90f);
                 g.FillRectangle(accentBrush,
                     new RectangleF(PadX, y + 4, 3, NavItemH - 8));
             }
-
-            // Hover (подсветка если мышь на элементе, но не активный)
-            if (!active)
+            else
             {
                 var mp = PointToClient(Cursor.Position);
                 if (rect.Contains(mp))
@@ -186,33 +157,36 @@ namespace ScreenSnap
                 }
             }
 
-            // Иконка
-            using var iconFont = t.FontBody(14f);
-            var iconRect = new Rectangle(PadX + 8, y, 22, NavItemH);
+            // Иконка — Segoe UI Emoji чтобы emoji рендерились корректно
+            using var iconFont  = new Font("Segoe UI Emoji", 12f);
+            var iconRect        = new Rectangle(IconX, y, IconW, NavItemH);
             TextRenderer.DrawText(g, icon, iconFont, iconRect,
                 active ? t.Accent.A2 : t.Text3,
                 TextFormatFlags.VerticalCenter);
 
-            // Лейбл
+            // Лейбл — ширина до бейджа
+            int badge   = _badges.GetValueOrDefault(screen, 0);
+            int badgeRW = badge > 0 ? BadgeW + 4 : 0;
+            int labelW  = Width - LabelX - PadX - badgeRW;
+
             using var labelFont = active
                 ? t.FontBody(FontLoader.BodyS, FontStyle.Bold)
                 : t.FontBody(FontLoader.BodyS);
-            var labelRect = new Rectangle(PadX + 34, y, Width - PadX * 2 - 34 - 36, NavItemH);
+            var labelRect = new Rectangle(LabelX, y, labelW, NavItemH);
             TextRenderer.DrawText(g, label, labelFont, labelRect,
                 active ? t.Text1 : t.Text2,
-                TextFormatFlags.VerticalCenter);
+                TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
 
             // Бейдж
-            int badge = _badges.GetValueOrDefault(screen, 0);
             if (badge > 0)
             {
-                var badgeText  = badge > 99 ? "99+" : badge.ToString();
-                using var bf   = t.FontMono(10f);
-                var bs         = TextRenderer.MeasureText(badgeText, bf);
-                int bw         = Math.Max(bs.Width + 8, 20);
-                int bx         = Width - PadX * 2 - bw + 6;
-                int by         = y + (NavItemH - 16) / 2;
-                var badgeRect  = new Rectangle(bx, by, bw, 16);
+                var badgeText = badge > 99 ? "99+" : badge.ToString();
+                using var bf  = t.FontMono(10f);
+                var bs        = TextRenderer.MeasureText(badgeText, bf);
+                int bw        = Math.Max(bs.Width + 8, 20);
+                int bx        = Width - PadX - bw - 2;
+                int by        = y + (NavItemH - 16) / 2;
+                var badgeRect = new Rectangle(bx, by, bw, 16);
 
                 using var bb = new SolidBrush(
                     Color.FromArgb(24, t.Accent.A2.R, t.Accent.A2.G, t.Accent.A2.B));
@@ -227,7 +201,7 @@ namespace ScreenSnap
             y += NavItemH + 2;
         }
 
-        // ── Collection item ────────────────────────────────────────────────────
+        // ── Collection item ───────────────────────────────────────────────────
         private void DrawCollectionItem(Graphics g, AppTheme t, ref int y,
             string icon, string label, int count)
         {
@@ -241,24 +215,31 @@ namespace ScreenSnap
                 g.FillPath(brush, path);
             }
 
-            using var iconFont = t.FontBody(12f);
-            var iconRect = new Rectangle(PadX + 8, y, 18, ColItemH);
+            // Иконка
+            using var iconFont = new Font("Segoe UI Emoji", 11f);
+            var iconRect = new Rectangle(PadX + 6, y, 20, ColItemH);
             TextRenderer.DrawText(g, icon, iconFont, iconRect, t.Text3,
                 TextFormatFlags.VerticalCenter);
 
-            using var labelFont = t.FontBody(FontLoader.BodyXS);
-            var labelRect = new Rectangle(PadX + 30, y, Width - PadX * 2 - 50, ColItemH);
-            TextRenderer.DrawText(g, label, labelFont, labelRect, t.Text2,
-                TextFormatFlags.VerticalCenter);
-
+            // Счётчик справа
+            string cntText = count > 0 ? count.ToString() : "";
+            int cntW = 0;
             if (count > 0)
             {
-                var cntText = count.ToString();
                 using var cf = t.FontMono(10f);
-                var cntRect  = new Rectangle(Width - PadX - 28, y, 24, ColItemH);
+                cntW = TextRenderer.MeasureText(cntText, cf).Width + 4;
+                var cntRect = new Rectangle(Width - PadX - cntW, y, cntW, ColItemH);
                 TextRenderer.DrawText(g, cntText, cf, cntRect, t.Text4,
                     TextFormatFlags.Right | TextFormatFlags.VerticalCenter);
             }
+
+            // Лейбл — между иконкой и счётчиком, с EndEllipsis
+            int labelX = PadX + 30;
+            int labelW = Width - labelX - PadX - cntW - 4;
+            using var labelFont = t.FontBody(FontLoader.BodyXS);
+            var labelRect = new Rectangle(labelX, y, labelW, ColItemH);
+            TextRenderer.DrawText(g, label, labelFont, labelRect, t.Text2,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
 
             y += ColItemH + 2;
         }
@@ -266,39 +247,46 @@ namespace ScreenSnap
         // ── Yandex Disk item ──────────────────────────────────────────────────
         private void DrawDiskItem(Graphics g, AppTheme t, ref int y)
         {
-            var rect = new RectangleF(PadX, y, Width - PadX * 2, 48);
+            // Ширина карточки: от PadX до Width-PadX
+            int cardW = Width - PadX * 2;
+            var rect  = new RectangleF(PadX, y, cardW, 48);
 
-            // Карточка
             DrawingHelpers.DrawGlassCard(g, rect, AppTheme.RSm, t.BgGlass, t.Stroke1);
 
             // Я — логотип
-            var yColor = t.Yandex;
             using var yFont = t.FontDisplay(14f, FontStyle.Bold);
             TextRenderer.DrawText(g, "Я", yFont,
-                new Rectangle(PadX + 10, y + 8, 20, 20), yColor);
+                new Rectangle(PadX + 10, y + 8, 20, 20), t.Yandex);
 
-            // Название
+            // Ширина правой части (если есть кнопка SYNC — отдаём ей 44px)
+            bool showSync = _diskConnected;
+            int  syncW    = showSync ? 44 : 0;
+            int  textW    = cardW - 34 - syncW - 8; // 34 = отступ слева от Я
+
+            // Название — с EndEllipsis на случай узкого сайдбара
             using var nameFont = t.FontBody(FontLoader.BodyXS, FontStyle.Bold);
-            TextRenderer.DrawText(g, "Яндекс.Диск", nameFont,
-                new Rectangle(PadX + 34, y + 8, 100, 16), t.Text2);
+            var nameRect = new Rectangle(PadX + 34, y + 8, textW, 16);
+            TextRenderer.DrawText(g, "Яндекс.Диск", nameFont, nameRect, t.Text2,
+                TextFormatFlags.EndEllipsis);
 
             // Статус
             using var stFont = t.FontBody(10f);
-            Color stColor;
+            Color  stColor;
             string stText;
-            if (!_diskConnected)       { stText = "Отключён"; stColor = t.Text4; }
-            else if (_diskSyncing)     { stText = "Синхронизация…"; stColor = t.Warning; }
-            else                       { stText = "✓ Синхронизировано"; stColor = t.Success; }
+            if (!_diskConnected)   { stText = "Отключён";         stColor = t.Text4;   }
+            else if (_diskSyncing) { stText = "Синхронизация…";   stColor = t.Warning; }
+            else                   { stText = "✓ Синхронизировано"; stColor = t.Success; }
 
-            TextRenderer.DrawText(g, stText, stFont,
-                new Rectangle(PadX + 34, y + 26, 110, 14), stColor);
+            var stRect = new Rectangle(PadX + 34, y + 26, textW, 14);
+            TextRenderer.DrawText(g, stText, stFont, stRect, stColor,
+                TextFormatFlags.EndEllipsis);
 
-            // Кнопка SYNC справа (только если подключён)
-            if (_diskConnected)
+            // Кнопка SYNC
+            if (showSync)
             {
-                var btnRect = new Rectangle(Width - PadX - 44, y + 14, 38, 20);
+                var btnRect = new Rectangle(Width - PadX - syncW + 4, y + 14, 38, 20);
                 using var btnPath = DrawingHelpers.RoundedRect(btnRect, 4f);
-                using var btnB = new SolidBrush(Color.FromArgb(20,
+                using var btnB    = new SolidBrush(Color.FromArgb(20,
                     t.Accent.A2.R, t.Accent.A2.G, t.Accent.A2.B));
                 g.FillPath(btnB, btnPath);
                 using var bp = new Pen(t.Accent.A2, 0.5f);
@@ -318,7 +306,6 @@ namespace ScreenSnap
             int y = Height - UserPodH - 12;
             DrawDivider(g, t, y); y += 1 + 10;
 
-            // Аватар-кружок (инициалы)
             var avatarRect = new RectangleF(PadX + 4, y + (UserPodH - 32) / 2, 32, 32);
             DrawingHelpers.DrawAccentFill(g, avatarRect, t.Accent, 16f);
 
@@ -327,15 +314,17 @@ namespace ScreenSnap
                 Rectangle.Round(avatarRect), Color.White,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
 
-            // Имя
+            int textX = PadX + 42;
+            int textW = Width - textX - PadX - 4;
+
             using var nameFont = t.FontBody(FontLoader.BodyXS, FontStyle.Bold);
             TextRenderer.DrawText(g, "Auskraft", nameFont,
-                new Rectangle(PadX + 42, y + 6, Width - PadX - 60, 16), t.Text1);
+                new Rectangle(textX, y + 6, textW, 16), t.Text1,
+                TextFormatFlags.EndEllipsis);
 
-            // Подзаголовок
             using var subFont = t.FontBody(10f);
             TextRenderer.DrawText(g, "Pro", subFont,
-                new Rectangle(PadX + 42, y + 22, 40, 14), t.Accent.A2);
+                new Rectangle(textX, y + 22, 40, 14), t.Accent.A2);
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -353,7 +342,7 @@ namespace ScreenSnap
             y += 20;
         }
 
-        // ── Hit testing (определяем, по какому nav-item кликнули) ─────────────
+        // ── Hit testing ───────────────────────────────────────────────────────
         private static readonly AppScreen[] NavOrder =
             { AppScreen.Workflows, AppScreen.History, AppScreen.Editor, AppScreen.Settings };
 
@@ -380,11 +369,7 @@ namespace ScreenSnap
             }
         }
 
-        private void OnMouseMove(object? sender, MouseEventArgs e)
-        {
-            // Перерисовываем для эффекта hover
-            Invalidate();
-        }
+        private void OnMouseMove(object? sender, MouseEventArgs e) => Invalidate();
 
         protected override void Dispose(bool disposing)
         {
