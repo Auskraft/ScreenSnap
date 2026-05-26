@@ -7,15 +7,20 @@ namespace ScreenSnap
 {
     public class TrayApplicationContext : ApplicationContext
     {
-        private readonly NotifyIcon    _trayIcon;
-        private readonly HotkeyManager _hotkeyManager;
-        private readonly AppSettings   _settings;
-        private MainWindow?            _mainWindow;
+        private readonly NotifyIcon      _trayIcon;
+        private readonly HotkeyManager  _hotkeyManager;
+        private readonly AppSettings    _settings;
+        private readonly WorkflowManager _workflowManager;
+        private MainWindow?             _mainWindow;
 
         public TrayApplicationContext()
         {
-            _settings      = AppSettings.Load();
-            _hotkeyManager = new HotkeyManager();
+            _settings         = AppSettings.Load();
+            _hotkeyManager    = new HotkeyManager();
+            _workflowManager  = new WorkflowManager(_settings);
+
+            // Pin-событие от WorkflowManager → уведомляем HistoryScreen
+            _workflowManager.PinRequested += OnPinRequested;
 
             // Tray icon
             var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.png");
@@ -39,9 +44,17 @@ namespace ScreenSnap
             };
             _trayIcon.DoubleClick += (_, _) => OpenMainWindow();
 
-            // Hotkeys
-            _hotkeyManager.FullScreenPressed += CaptureFullScreen;
-            _hotkeyManager.RegionPressed     += CaptureRegion;
+            // Hotkeys — базовые
+            _hotkeyManager.FullScreenPressed     += CaptureFullScreen;
+            _hotkeyManager.RegionPressed         += CaptureRegion;
+
+            // Hotkeys — пресеты Фазы 3
+            _hotkeyManager.QuickSharePressed     += () => RunWorkflowAsync(WorkflowKind.QuickShare);
+            _hotkeyManager.DocModePressed        += () => RunWorkflowAsync(WorkflowKind.DocMode);
+            _hotkeyManager.PrivacyModePressed    += () => RunWorkflowAsync(WorkflowKind.PrivacyMode);
+            _hotkeyManager.SavePinPressed        += () => RunWorkflowAsync(WorkflowKind.SavePin);
+            _hotkeyManager.CommandPalettePressed += OpenCommandPalette;
+
             _hotkeyManager.Register(_settings);
 
             // Тема из настроек
@@ -51,45 +64,40 @@ namespace ScreenSnap
                 ThemeManager.SetAccent(accent);
         }
 
+        // ── Context menu ──────────────────────────────────────────────────────
         private ContextMenuStrip BuildContextMenu()
         {
             var menu = new ContextMenuStrip();
 
-            var open = new ToolStripMenuItem("Открыть Auskraft Snap");
-            open.Click += (_, _) => OpenMainWindow();
-            menu.Items.Add(open);
-
+            AddItem(menu, "Открыть Auskraft Snap",          () => OpenMainWindow());
             menu.Items.Add(new ToolStripSeparator());
 
-            var capture = new ToolStripMenuItem("📸 Скриншот области  Ctrl+Shift+A");
-            capture.Click += (_, _) => CaptureRegion();
-            menu.Items.Add(capture);
-
-            var quickShare = new ToolStripMenuItem("⚡ Quick Share  Ctrl+Shift+S");
-            quickShare.Click += (_, _) => RunQuickShare();
-            menu.Items.Add(quickShare);
-
+            AddItem(menu, "📸 Скриншот области  Ctrl+Shift+A", () => CaptureRegion());
+            AddItem(menu, "⚡ Quick Share  Ctrl+Shift+S",       () => RunWorkflowAsync(WorkflowKind.QuickShare));
+            AddItem(menu, "✏️ Documentation Mode  Ctrl+Shift+D", () => RunWorkflowAsync(WorkflowKind.DocMode));
+            AddItem(menu, "🛡 Privacy Mode  Ctrl+Shift+P",       () => RunWorkflowAsync(WorkflowKind.PrivacyMode));
+            AddItem(menu, "📌 Save & Pin  Ctrl+Shift+T",         () => RunWorkflowAsync(WorkflowKind.SavePin));
             menu.Items.Add(new ToolStripSeparator());
 
-            var themeToggle = new ToolStripMenuItem("🌙 Переключить тему");
-            themeToggle.Click += (_, _) => ThemeManager.Toggle();
-            menu.Items.Add(themeToggle);
-
+            AddItem(menu, "🌙 Переключить тему", () => ThemeManager.Toggle());
             menu.Items.Add(new ToolStripSeparator());
 
-            var settings = new ToolStripMenuItem("⚙️ Настройки");
-            settings.Click += (_, _) => new SettingsForm(_settings).ShowDialog();
-            menu.Items.Add(settings);
-
+            AddItem(menu, "⚙️ Настройки", () => new SettingsForm(_settings).ShowDialog());
             menu.Items.Add(new ToolStripSeparator());
 
-            var exit = new ToolStripMenuItem("❌ Выход");
-            exit.Click += (_, _) => ExitApplication();
-            menu.Items.Add(exit);
+            AddItem(menu, "❌ Выход", () => ExitApplication());
 
             return menu;
         }
 
+        private static void AddItem(ContextMenuStrip menu, string text, Action action)
+        {
+            var item = new ToolStripMenuItem(text);
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+        }
+
+        // ── Window ────────────────────────────────────────────────────────────
         private void OpenMainWindow()
         {
             if (_mainWindow == null || _mainWindow.IsDisposed)
@@ -106,6 +114,7 @@ namespace ScreenSnap
             }
         }
 
+        // ── Capture (без workflow) ────────────────────────────────────────────
         private void CaptureRegion()
         {
             _mainWindow?.Hide();
@@ -114,32 +123,84 @@ namespace ScreenSnap
             {
                 if (_settings.CopyToClipboard)
                     Clipboard.SetImage(new Bitmap(path));
-                _trayIcon.ShowBalloonTip(2000, "Auskraft Snap", $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
+                _trayIcon.ShowBalloonTip(2000, "Auskraft Snap",
+                    $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
+
+                NotifyMainWindow(path, pinned: false);
             }
             _mainWindow?.Show();
         }
 
         private void CaptureFullScreen()
         {
-            var path = ScreenCapture.CaptureFullScreen();
+            var path = ScreenCapture.CaptureFullScreen(_settings.SaveFolder);
             if (_settings.CopyToClipboard)
                 Clipboard.SetImage(new Bitmap(path));
-            _trayIcon.ShowBalloonTip(2000, "Auskraft Snap", $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
-        }
-
-        private void RunQuickShare()
-        {
-            // Фаза 3 — WorkflowManager
             _trayIcon.ShowBalloonTip(2000, "Auskraft Snap",
-                "⚡ Quick Share — будет готов в Фазе 3", ToolTipIcon.Info);
+                $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
+
+            NotifyMainWindow(path, pinned: false);
         }
 
+        // ── Workflow ──────────────────────────────────────────────────────────
+        private enum WorkflowKind { QuickShare, DocMode, PrivacyMode, SavePin }
+
+        private async void RunWorkflowAsync(WorkflowKind kind)
+        {
+            try
+            {
+                switch (kind)
+                {
+                    case WorkflowKind.QuickShare:
+                        await _workflowManager.RunQuickShareAsync(_mainWindow);
+                        break;
+                    case WorkflowKind.DocMode:
+                        await _workflowManager.RunDocumentationModeAsync(_mainWindow);
+                        break;
+                    case WorkflowKind.PrivacyMode:
+                        await _workflowManager.RunPrivacyModeAsync(_mainWindow);
+                        break;
+                    case WorkflowKind.SavePin:
+                        await _workflowManager.RunSaveAndPinAsync(_mainWindow);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Tray] Workflow error: {ex}");
+            }
+        }
+
+        private void OnPinRequested(object? sender, string path)
+        {
+            NotifyMainWindow(path, pinned: true);
+        }
+
+        // ── CommandPalette ────────────────────────────────────────────────────
         private void OpenCommandPalette()
         {
             OpenMainWindow();
-            // Фаза 3 — CommandPalette.cs
+            CommandPalette.Open(_mainWindow!);
         }
 
+        // ── Helpers ───────────────────────────────────────────────────────────
+        private void NotifyMainWindow(string path, bool pinned)
+        {
+            if (_mainWindow == null || _mainWindow.IsDisposed) return;
+            _mainWindow.Invoke(() =>
+            {
+                var item = new HistoryScreen.ScreenshotItem
+                {
+                    FilePath  = path,
+                    FileName  = Path.GetFileName(path),
+                    Taken     = DateTime.Now,
+                    Pinned    = pinned,
+                };
+                _mainWindow.NotifyNewScreenshot(item);
+            });
+        }
+
+        // ── Exit ──────────────────────────────────────────────────────────────
         private void ExitApplication()
         {
             _hotkeyManager.Dispose();

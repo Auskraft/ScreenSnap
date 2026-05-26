@@ -8,7 +8,8 @@
     ".NETCoreApp,Version=v10.0": {
       "AuskraftSnap/1.0.0": {
         "dependencies": {
-          "DotNetEnv": "3.2.0"
+          "DotNetEnv": "3.2.0",
+          "SixLabors.ImageSharp": "3.1.12"
         },
         "runtime": {
           "AuskraftSnap.dll": {}
@@ -57,6 +58,14 @@
           }
         }
       },
+      "SixLabors.ImageSharp/3.1.12": {
+        "runtime": {
+          "lib/net6.0/SixLabors.ImageSharp.dll": {
+            "assemblyVersion": "3.0.0.0",
+            "fileVersion": "3.1.12.0"
+          }
+        }
+      },
       "Superpower/3.0.0": {
         "runtime": {
           "lib/net5.0/Superpower.dll": {
@@ -100,6 +109,13 @@
       "sha512": "sha512-MrsHOyFpwT+LBzGWp/Oq3pV1Vku8FYE6hgO+2XR0WBRtoI9EaJcpRbtBabS7pXYrkIN1/LOXACpZ9Stqmbrs6A==",
       "path": "microsoft.extensions.primitives/1.1.1",
       "hashPath": "microsoft.extensions.primitives.1.1.1.nupkg.sha512"
+    },
+    "SixLabors.ImageSharp/3.1.12": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-iAg6zifihXEFS/t7fiHhZBGAdCp3FavsF4i2ZIDp0JfeYeDVzvmlbY1CNhhIKimaIzrzSi5M/NBFcWvZT2rB/A==",
+      "path": "sixlabors.imagesharp/3.1.12",
+      "hashPath": "sixlabors.imagesharp.3.1.12.nupkg.sha512"
     },
     "Superpower/3.0.0": {
       "type": "package",
