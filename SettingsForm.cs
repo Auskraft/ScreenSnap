@@ -132,7 +132,7 @@ namespace ScreenSnap
 
         private void OnSave(object? sender, EventArgs e)
         {
-            settings.SavePath = txtSavePath.Text;
+            settings.SavePath = settings.SavePath = txtSavePath.Text;
             settings.FileFormat = cmbFormat.SelectedItem?.ToString() ?? "PNG";
             settings.HotkeyFullScreen = txtHotkeyFull.Text;
             settings.HotkeyRegion = txtHotkeyRegion.Text;

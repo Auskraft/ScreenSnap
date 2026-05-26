@@ -1,146 +1,161 @@
+using System;
 using System.Drawing;
-using System.Threading;
+using System.IO;
 using System.Windows.Forms;
 
 namespace ScreenSnap
 {
     public class TrayApplicationContext : ApplicationContext
     {
-        private NotifyIcon trayIcon;
-        private AppSettings settings;
-        private HotkeyManager hotkeyManager;
-        private YandexDiskService yandex;
-        private ToolStripMenuItem yandexMenuItem = new();
-
-        private static Icon LoadIcon()
-        {
-            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.png");
-            if (File.Exists(iconPath))
-            {
-                using var bmp = new Bitmap(iconPath);
-                return Icon.FromHandle(bmp.GetHicon());
-            }
-            return SystemIcons.Application;
-        }
+        private readonly NotifyIcon    _trayIcon;
+        private readonly HotkeyManager _hotkeyManager;
+        private readonly AppSettings   _settings;
+        private MainWindow?            _mainWindow;
 
         public TrayApplicationContext()
         {
-            DotNetEnv.Env.Load();
+            _settings      = AppSettings.Load();
+            _hotkeyManager = new HotkeyManager();
 
-            settings = AppSettings.Load();
-            ScreenCapture.SavePath = settings.SavePath;
-
-            yandex = new YandexDiskService();
-            if (!string.IsNullOrEmpty(settings.YandexToken))
-                yandex.SetToken(settings.YandexToken);
-
-            hotkeyManager = new HotkeyManager();
-            hotkeyManager.FullScreenPressed += () => TakeFullScreen();
-            hotkeyManager.RegionPressed += () => TakeRegion();
-            hotkeyManager.Register(settings);
-
-            trayIcon = new NotifyIcon()
+            // Tray icon
+            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.png");
+            Icon trayIconImage;
+            if (File.Exists(iconPath))
             {
-                Icon = LoadIcon(),
-                Text = "Auskraft Snap",
-                Visible = true,
-                ContextMenuStrip = BuildMenu()
-            };
-        }
-
-        private ContextMenuStrip BuildMenu()
-        {
-            var menu = new ContextMenuStrip();
-            menu.Items.Add("📷 Скриншот полного экрана", null, OnFullScreenshot);
-            menu.Items.Add("✂️ Выделить область", null, OnRegionScreenshot);
-            menu.Items.Add(new ToolStripSeparator());
-
-            yandexMenuItem = new ToolStripMenuItem();
-            UpdateYandexMenuItem();
-            menu.Items.Add(yandexMenuItem);
-
-            menu.Items.Add("⚙️ Настройки", null, OnSettings);
-            menu.Items.Add("❌ Выход", null, OnExit);
-            return menu;
-        }
-
-        private void UpdateYandexMenuItem()
-        {
-            if (yandex.IsAuthorized)
-            {
-                yandexMenuItem.Text = "☁️ Яндекс.Диск подключён ✅";
-                yandexMenuItem.Click -= OnYandexConnect;
-                yandexMenuItem.Click += OnYandexDisconnect;
+                using var bmp = new Bitmap(iconPath);
+                trayIconImage = Icon.FromHandle(bmp.GetHicon());
             }
             else
             {
-                yandexMenuItem.Text = "☁️ Подключить Яндекс.Диск";
-                yandexMenuItem.Click -= OnYandexDisconnect;
-                yandexMenuItem.Click += OnYandexConnect;
+                trayIconImage = SystemIcons.Application;
             }
-        }
 
-        private async void TakeFullScreen()
-        {
-            var file = ScreenCapture.CaptureFullScreen();
-            if (yandex.IsAuthorized)
-                await yandex.UploadAsync(file);
-            trayIcon.ShowBalloonTip(3000, "Auskraft Snap", $"Сохранено:\n{file}", ToolTipIcon.Info);
-        }
-
-        private async void TakeRegion()
-        {
-            trayIcon.Visible = false;
-            Thread.Sleep(200);
-            var file = RegionSelector.CaptureRegion();
-            trayIcon.Visible = true;
-
-            if (file != null)
+            _trayIcon = new NotifyIcon
             {
-                if (yandex.IsAuthorized)
-                    await yandex.UploadAsync(file);
-                trayIcon.ShowBalloonTip(3000, "Auskraft Snap", $"Сохранено:\n{file}", ToolTipIcon.Info);
-            }
+                Icon             = trayIconImage,
+                Text             = "Auskraft Snap",
+                Visible          = true,
+                ContextMenuStrip = BuildContextMenu(),
+            };
+            _trayIcon.DoubleClick += (_, _) => OpenMainWindow();
+
+            // Hotkeys
+            _hotkeyManager.FullScreenPressed += CaptureFullScreen;
+            _hotkeyManager.RegionPressed     += CaptureRegion;
+            _hotkeyManager.Register(_settings);
+
+            // Тема из настроек
+            if (Enum.TryParse<AppThemeMode>(_settings.Theme, out var mode))
+                ThemeManager.SetMode(mode);
+            if (Enum.TryParse<AccentPalette>(_settings.Accent, out var accent))
+                ThemeManager.SetAccent(accent);
         }
 
-        private void OnFullScreenshot(object? sender, EventArgs e) => TakeFullScreen();
-        private void OnRegionScreenshot(object? sender, EventArgs e) => TakeRegion();
-
-        private async void OnYandexConnect(object? sender, EventArgs e)
+        private ContextMenuStrip BuildContextMenu()
         {
-            await yandex.AuthorizeAsync();
-            if (yandex.IsAuthorized)
+            var menu = new ContextMenuStrip();
+
+            var open = new ToolStripMenuItem("Открыть Auskraft Snap");
+            open.Click += (_, _) => OpenMainWindow();
+            menu.Items.Add(open);
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            var capture = new ToolStripMenuItem("📸 Скриншот области  Ctrl+Shift+A");
+            capture.Click += (_, _) => CaptureRegion();
+            menu.Items.Add(capture);
+
+            var quickShare = new ToolStripMenuItem("⚡ Quick Share  Ctrl+Shift+S");
+            quickShare.Click += (_, _) => RunQuickShare();
+            menu.Items.Add(quickShare);
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            var themeToggle = new ToolStripMenuItem("🌙 Переключить тему");
+            themeToggle.Click += (_, _) => ThemeManager.Toggle();
+            menu.Items.Add(themeToggle);
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            var settings = new ToolStripMenuItem("⚙️ Настройки");
+            settings.Click += (_, _) => new SettingsForm(_settings).ShowDialog();
+            menu.Items.Add(settings);
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            var exit = new ToolStripMenuItem("❌ Выход");
+            exit.Click += (_, _) => ExitApplication();
+            menu.Items.Add(exit);
+
+            return menu;
+        }
+
+        private void OpenMainWindow()
+        {
+            if (_mainWindow == null || _mainWindow.IsDisposed)
             {
-                UpdateYandexMenuItem();
-                trayIcon.ShowBalloonTip(3000, "Auskraft Snap", "Яндекс.Диск подключён!", ToolTipIcon.Info);
+                _mainWindow = new MainWindow();
+                _mainWindow.CommandPaletteRequested += (_, _) => OpenCommandPalette();
+                _mainWindow.FormClosed += (_, _) => _mainWindow = null;
+                _mainWindow.Show();
             }
-        }
-
-        private void OnYandexDisconnect(object? sender, EventArgs e)
-        {
-            var result = MessageBox.Show("Отключить Яндекс.Диск?", "Auskraft Snap", MessageBoxButtons.YesNo);
-            if (result == DialogResult.Yes)
+            else
             {
-                settings.YandexToken = "";
-                settings.Save();
-                yandex.SetToken("");
-                UpdateYandexMenuItem();
-                trayIcon.ShowBalloonTip(3000, "Auskraft Snap", "Яндекс.Диск отключён.", ToolTipIcon.Info);
+                _mainWindow.BringToFront();
+                _mainWindow.Activate();
             }
         }
 
-        private void OnSettings(object? sender, EventArgs e)
+        private void CaptureRegion()
         {
-            using var form = new SettingsForm(settings);
-            if (form.ShowDialog() == DialogResult.OK)
-                hotkeyManager.Register(settings);
+            _mainWindow?.Hide();
+            var path = RegionSelector.CaptureRegion();
+            if (path != null)
+            {
+                if (_settings.CopyToClipboard)
+                    Clipboard.SetImage(new Bitmap(path));
+                _trayIcon.ShowBalloonTip(2000, "Auskraft Snap", $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
+            }
+            _mainWindow?.Show();
         }
 
-        private void OnExit(object? sender, EventArgs e)
+        private void CaptureFullScreen()
         {
-            hotkeyManager.Dispose();
-            trayIcon.Visible = false;
+            var path = ScreenCapture.CaptureFullScreen();
+            if (_settings.CopyToClipboard)
+                Clipboard.SetImage(new Bitmap(path));
+            _trayIcon.ShowBalloonTip(2000, "Auskraft Snap", $"Сохранено: {Path.GetFileName(path)}", ToolTipIcon.Info);
+        }
+
+        private void RunQuickShare()
+        {
+            // Фаза 3 — WorkflowManager
+            _trayIcon.ShowBalloonTip(2000, "Auskraft Snap",
+                "⚡ Quick Share — будет готов в Фазе 3", ToolTipIcon.Info);
+        }
+
+        private void OpenCommandPalette()
+        {
+            OpenMainWindow();
+            // Фаза 3 — CommandPalette.cs
+        }
+
+        private void ExitApplication()
+        {
+            _hotkeyManager.Dispose();
+            _trayIcon.Visible = false;
+            _trayIcon.Dispose();
             Application.Exit();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _hotkeyManager.Dispose();
+                _trayIcon.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }
